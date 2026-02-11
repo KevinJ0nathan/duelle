@@ -102,13 +102,13 @@ export default function Home() {
                 <span className="flex-grow border-t border-gray-300"></span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex w-full rounded-xl overflow-hidden border-2 border-gray-300">
                 <input
                   type="text"
-                  className="flex-1 p-4 rounded-md border-2 border-gray-300 text-center font-bold focus:outline-none focus:border-gray-400"
                   placeholder="ENTER CODE"
+                  className="flex-1 px-4 py-4 text-center font-bold text-gray-700 focus:outline-none"
                 />
-                <button className="px-6 py-4 rounded-md bg-green-800 text-white font-bold hover:bg-green-700 transition">
+                <button className="px-6 bg-green-800 text-white font-bold hover:bg-green-700 transition">
                   JOIN
                 </button>
               </div>
