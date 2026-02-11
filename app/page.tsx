@@ -1,63 +1,184 @@
-import Image from "next/image";
+"use client";
 
 export default function Home() {
+  type TileStatus = "green" | "gold" | "gray" | "empty";
+
+  interface Tile {
+    l: string;
+    s: TileStatus;
+  }
+
+  const row1: Tile[] = [
+    { l: "S", s: "gray" },
+    { l: "T", s: "gray" },
+    { l: "A", s: "gold" },
+    { l: "R", s: "gold" },
+    { l: "E", s: "gray" },
+  ];
+
+  const row2: Tile[] = [
+    { l: "M", s: "green" },
+    { l: "A", s: "gold" },
+    { l: "R", s: "green" },
+    { l: "C", s: "gray" },
+    { l: "H", s: "gray" },
+  ];
+
+  const row3: Tile[] = [
+    { l: "M", s: "green" },
+    { l: "A", s: "gold" },
+    { l: "T", s: "green" },
+    { l: "C", s: "gray" },
+    { l: "H", s: "gray" },
+  ];
+
+  const getColor = (status: TileStatus) => {
+    if (status === "green") return "bg-[#859f70]";
+    if (status === "gold") return "bg-[#b59f5b]";
+    return "bg-[#6a6c6e]";
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex flex-col bg-[var(--bg-cream)] min-h-screen">
+      {/* Header */}
+      <header className="md:absolute top-0 left-0 z-10 w-full px-8 py-6 flex justify-between items-center bg-transparent">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#2D4030] rounded-lg flex items-center justify-center text-[#F9F8F6]">
+            <span className="font-bold text-lg">D</span>
+          </div>
+          <span className="font-bold text-xl text-[#2D4030] font-serif tracking-tight">
+            Duelle
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            {/* Clickable Profile Button */}
+            <button
+              onClick={() => console.log("Profile clicked!")}
+              className="w-10 h-10 bg-[#C7DBC6] rounded-full flex items-center justify-center text-[#2D4030] transition-transform hover:scale-105 active:scale-95 cursor-pointer border-none outline-none"
+              aria-label="User Profile"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content container */}
+      <main className="flex-1 flex flex-col justify-center items-center p-8 w-full">
+        {/* Content Container */}
+        <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-6xl gap-16 lg:gap-24">
+          {/* Left Side: Hero Section */}
+          <div className="flex-1 w-full max-w-md">
+            <h1 className="text-6xl font-serif font-bold leading-tight">
+              Wordle, <br />
+              but faster.
+            </h1>
+            <p className="my-6 text-lg text-gray-700">
+              Challenge friends in real-time 1v1 duels.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="space-y-4">
+              <button className="w-full text-xl p-4 bg-[var(--matcha-dark)] text-white font-semibold rounded-md hover:opacity-90 transition-opacity cursor-pointer">
+                Find Opponent
+              </button>
+
+              <div className="flex items-center gap-3 text-xs text-[#8FAE90] font-bold uppercase tracking-widest py-2">
+                <span className="flex-grow border-t border-gray-300"></span>
+                OR
+                <span className="flex-grow border-t border-gray-300"></span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="flex-grow p-4 rounded-md border-2 border-gray-300 text-center font-bold focus:outline-none focus:border-gray-400"
+                  placeholder="ENTER CODE"
+                />
+                <button className="px-6 py-4 rounded-md border-2 border-gray-300 font-bold hover:bg-gray-50 cursor-pointer">
+                  JOIN
+                </button>
+              </div>
+
+              <button className="text-center font-medium w-full py-2 text-[var(--matcha-accent)] hover:underline cursor-pointer">
+                Create a Private Room
+              </button>
+            </div>
+          </div>
+
+          {/* Right Side: Hero Icon */}
+          <div className="flex-1 flex justify-center w-full">
+            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md aspect-[3/4] flex flex-col">
+              {/* Inner Header */}
+              <div className="flex justify-between text-xs font-black text-gray-400 mb-6 tracking-tighter">
+                <span>YOU</span>
+                <span className="text-gray-200">VS</span>
+                <span>GUEST</span>
+              </div>
+
+              {/* The WORDLE Guesses */}
+              <div className="grid grid-cols-5 gap-3">
+                {row1.map((item, i) => (
+                  <div
+                    key={i}
+                    className={`aspect-square flex items-center justify-center text-white font-bold rounded-sm text-2xl ${getColor(item.s)}`}
+                  >
+                    {item.l}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-5 gap-3 mt-3">
+                {row2.map((item, i) => (
+                  <div
+                    key={i}
+                    className={`aspect-square flex items-center justify-center text-white font-bold rounded-sm text-2xl ${getColor(item.s)}`}
+                  >
+                    {item.l}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-5 gap-3 mt-3">
+                {row3.map((item, i) => (
+                  <div
+                    key={i}
+                    className="aspect-square flex items-center justify-center text-black font-bold rounded-sm text-2xl border-2 border-gray-300"
+                  >
+                    {item.l}
+                  </div>
+                ))}
+              </div>
+
+              {/* Empty slots */}
+              {[...Array(3)].map((_, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  className="grid grid-cols-5 gap-3 mt-3 opacity-10"
+                >
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-square bg-gray-400 rounded-sm"
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
     </div>
