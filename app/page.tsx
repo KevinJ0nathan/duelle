@@ -102,7 +102,7 @@ export default function Home() {
                 <span className="flex-grow border-t border-gray-300"></span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <input
                   type="text"
                   className="flex-grow p-4 rounded-md border-2 border-gray-300 text-center font-bold focus:outline-none focus:border-gray-400"
