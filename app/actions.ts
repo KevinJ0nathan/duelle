@@ -455,35 +455,3 @@ export async function requestRematch(gameId: string, userId: string) {
 
   return { status: "waiting" };
 }
-
-// Prevent zombie games
-export async function claimInactivityWin(
-  gameId: string,
-  currentUserId: string,
-) {
-  const { data: game } = await supabase
-    .from("active_games")
-    .select("*")
-    .eq("id", gameId)
-    .single();
-
-  if (!game || game.status !== "playing")
-    return { error: "Invalid game state" };
-
-  // Calculate time difference
-  const lastMove = new Date(game.last_move_at).getTime();
-  const now = new Date().getTime();
-  const minutePassed = (now - lastMove) / (1000 * 60);
-
-  if (minutePassed >= 2) {
-    await supabase
-      .from("active_games")
-      .update({
-        status: "finished",
-        winner_uid: currentUserId,
-      })
-      .eq("id", gameId);
-    return { success: true };
-  }
-  return { error: "Inactivity period not reached yet" };
-}
