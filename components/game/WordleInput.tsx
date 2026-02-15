@@ -57,34 +57,14 @@ export default function WordleInput({
 }: WordleGridProps) {
   return (
     <div className="grid grid-rows-6 gap-2 mb-4">
-      {[...Array(6)].map((_, i) => {
-        // 1. Is this the row the user is currently typing on?
-        const isCurrentRow = i === turn;
-        // 2. The "Ghost Frame" check:
-        // This only triggers if we are on the row AFTER a guess,
-        // and that guess has the exact same text,
-        // AND the currentGuess hasn't been cleared by the hook yet.
-        const isGhostFrame =
-          isCurrentRow &&
-          turn > 0 &&
-          currentGuess === guesses[i - 1] &&
-          currentGuess !== "";
-        // 3. Determine what to show
-        let content = "";
-        if (isCurrentRow) {
-          content = isGhostFrame ? "" : currentGuess;
-        } else {
-          content = guesses[i] || "";
-        }
-        return (
-          <Row
-            key={i}
-            guess={content}
-            colors={history[i] || []}
-            isCurrent={i === turn}
-          />
-        );
-      })}
+      {[...Array(6)].map((_, i) => (
+        <Row
+          key={i}
+          guess={i === turn ? currentGuess : guesses[i] || ""}
+          colors={history[i] || []}
+          isCurrent={i === turn}
+        />
+      ))}
     </div>
   );
 }

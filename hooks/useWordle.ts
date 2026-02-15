@@ -29,6 +29,7 @@ export function useWordle(gameId: string, userId: string) {
         }
         // Handle success
         if (result.success && result.colors) {
+          setCurrentGuess("");
           setGuesses((prev) => [...prev, currentGuess]);
           setHistory((prev) => [...prev, result.colors]);
 
