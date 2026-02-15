@@ -11,66 +11,69 @@ export function useWordle(gameId: string, userId: string) {
   const [usedKeys, setUsedKeys] = useState<Record<string, string>>({});
 
   // Function that handles all input from both keyboard and screen
-  const handleKey = useCallback(async (key: string) => {
-    if (isProcessing) return;
+  const handleKey = useCallback(
+    async (key: string) => {
+      if (isProcessing) return;
 
-    if (key === "ENTER") {
-      if (currentGuess.length !== 5) return; // guesses must be 5 letters
+      if (key === "ENTER") {
+        if (currentGuess.length !== 5) return; // guesses must be 5 letters
 
-      setIsProcessing(true);
-      // Call the server action
-      const result = await submitGuess(gameId, currentGuess, userId);
-      // Handle error
-      if (result.error) {
-        alert(result.error);
+        setIsProcessing(true);
+        // Call the server action
+        const result = await submitGuess(gameId, currentGuess, userId);
+        // Handle error
+        if (result.error) {
+          alert(result.error);
+          setIsProcessing(false);
+          return;
+        }
+        // Handle success
+        if (result.success && result.colors) {
+          setGuesses((prev) => [...prev, currentGuess]);
+          setHistory((prev) => [...prev, result.colors]);
+
+          setUsedKeys((prev) => {
+            const newKeys = { ...prev };
+
+            currentGuess.split("").forEach((rawLetter, i) => {
+              const letter = rawLetter.toUpperCase();
+              const color = result.colors[i];
+              const currentColor = newKeys[letter];
+
+              if (color === "G") {
+                newKeys[letter] = "green";
+              } else if (color === "Y" && currentColor !== "green") {
+                newKeys[letter] = "yellow";
+              } else if (
+                color === "X" &&
+                currentColor !== "green" &&
+                currentColor !== "yellow"
+              ) {
+                newKeys[letter] = "slate";
+              }
+            });
+
+            return newKeys;
+          });
+          // Reset for next turn
+          setCurrentGuess("");
+        }
+
         setIsProcessing(false);
         return;
       }
-      // Handle success
-      if (result.success && result.colors) {
-        setGuesses((prev) => [...prev, currentGuess]);
-        setHistory((prev) => [...prev, result.colors]);
-
-        setUsedKeys((prev) => {
-          const newKeys = { ...prev };
-
-          currentGuess.split("").forEach((rawLetter, i) => {
-            const letter = rawLetter.toUpperCase();
-            const color = result.colors[i];
-            const currentColor = newKeys[letter];
-
-            if (color === "G") {
-              newKeys[letter] = "green";
-            } else if (color === "Y" && currentColor !== "green") {
-              newKeys[letter] = "yellow";
-            } else if (
-              color === "X" &&
-              currentColor !== "green" &&
-              currentColor !== "yellow"
-            ) {
-              newKeys[letter] = "slate";
-            }
-          });
-
-          return newKeys;
-        });
-        // Reset for next turn
-        setCurrentGuess("");
+      // Delete
+      if (key === "DELETE" || key === "BACKSPACE") {
+        setCurrentGuess((prev) => prev.slice(0, -1));
+        return;
       }
-
-      setIsProcessing(false);
-      return;
-    }
-    // Delete
-    if (key === "DELETE" || key === "BACKSPACE") {
-      setCurrentGuess((prev) => prev.slice(0, -1));
-      return;
-    }
-    // Add letter to current guess
-    if (/^[A-Z]$/.test(key) && currentGuess.length < 5) {
-      setCurrentGuess((prev) => prev + key);
-    }
-  });
+      // Add letter to current guess
+      if (/^[A-Z]$/.test(key) && currentGuess.length < 5) {
+        setCurrentGuess((prev) => prev + key);
+      }
+    },
+    [isProcessing, currentGuess, gameId, userId, submitGuess],
+  );
   // Listen for actual keyboard inputs
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
