@@ -57,14 +57,27 @@ export default function WordleInput({
 }: WordleGridProps) {
   return (
     <div className="grid grid-rows-6 gap-2 mb-4">
-      {[...Array(6)].map((_, i) => (
-        <Row
-          key={i}
-          guess={i === turn ? currentGuess : guesses[i] || ""}
-          colors={history[i] || []}
-          isCurrent={i === turn}
-        />
-      ))}
+      {[...Array(6)].map((_, i) => {
+        const isPastRow = i < turn;
+        const isCurrentRow = i === turn;
+
+        let content = "";
+        if (isPastRow) {
+          content = guesses[i];
+        } else if (isCurrentRow) {
+          // Only show currentGuess if it wasn't the EXACT word just submitted
+          // OR if you're okay with a tiny split-second delay.
+          content = currentGuess;
+        }
+        return (
+          <Row
+            key={i}
+            guess={content}
+            colors={history[i] || []}
+            isCurrent={isCurrentRow}
+          />
+        );
+      })}
     </div>
   );
 }
