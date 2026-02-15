@@ -109,7 +109,7 @@ export async function joinQueue(userId: string) {
 }
 
 // create a private game
-// have a unique 4-character code
+// have a unique 6-character code
 // set is private = true
 
 export async function createPrivateGame(userId: string) {
@@ -323,6 +323,7 @@ export async function submitGuess(
       [targetCol]: newGuesses,
       status: newStatus,
       winner_uid: winnerId,
+      last_move_at: new Date().toISOString(),
     })
     .eq("id", gameId);
 
@@ -337,6 +338,7 @@ export async function submitGuess(
       winner_uid: winnerId,
       // Sync the player ID if they just joined/moved
       player2_uid: game.player2_uid,
+      last_move_at: new Date().toISOString(),
     })
     .eq("id", gameId);
 
@@ -418,6 +420,7 @@ export async function requestRematch(gameId: string, userId: string) {
         secret_word: secret,
         is_private: freshGame.is_private,
         join_code: freshGame.join_code,
+        last_move_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -434,6 +437,7 @@ export async function requestRematch(gameId: string, userId: string) {
       join_code: freshGame.join_code,
       p1_scores: [],
       p2_scores: [],
+      last_move_at: new Date().toISOString(),
     });
 
     // Link old game to the new game
@@ -450,4 +454,36 @@ export async function requestRematch(gameId: string, userId: string) {
   }
 
   return { status: "waiting" };
+}
+
+// Prevent zombie games
+export async function claimInactivityWin(
+  gameId: string,
+  currentUserId: string,
+) {
+  const { data: game } = await supabase
+    .from("active_games")
+    .select("*")
+    .eq("id", gameId)
+    .single();
+
+  if (!game || game.status !== "playing")
+    return { error: "Invalid game state" };
+
+  // Calculate time difference
+  const lastMove = new Date(game.last_move_at).getTime();
+  const now = new Date().getTime();
+  const minutePassed = (now - lastMove) / (1000 * 60);
+
+  if (minutePassed >= 2) {
+    await supabase
+      .from("active_games")
+      .update({
+        status: "finished",
+        winner_uid: currentUserId,
+      })
+      .eq("id", gameId);
+    return { success: true };
+  }
+  return { error: "Inactivity period not reached yet" };
 }

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 
 import { createClientComponentClient } from "@/lib/supabase";
 import { requestRematch } from "@/app/actions";
+import { claimInactivityWin } from "@/app/actions";
 
 export default function GamePage({
   params,
@@ -36,6 +37,8 @@ export default function GamePage({
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentRematchRequested, setOpponentRematchRequested] =
     useState(false);
+  // for inactivity
+  const [inactivityTimer, setInactivityTimer] = useState<number>(120);
 
   const [fatalError, setFatalError] = useState<string | null>(null);
 
@@ -97,11 +100,19 @@ export default function GamePage({
         await Promise.all([
           supabase
             .from("active_games")
-            .update({ player2_uid: currentUserId, status: "playing" })
+            .update({
+              player2_uid: currentUserId,
+              status: "playing",
+              last_move_at: new Date().toISOString(),
+            })
             .eq("id", id),
           await supabase
             .from("games")
-            .update({ player2_uid: currentUserId, status: "playing" })
+            .update({
+              player2_uid: currentUserId,
+              status: "playing",
+              last_move_at: new Date().toISOString(),
+            })
             .eq("id", id),
         ]);
       } else {
@@ -188,6 +199,27 @@ export default function GamePage({
     };
   }, [id, userId, loading, supabase, router]);
 
+  useEffect(() => {
+    setInactivityTimer(120);
+  }, [opponentGuesses.length]);
+
+  useEffect(() => {
+    if (gameStatus !== "playing") return;
+
+    const interval = setInterval(() => {
+      // Check if its been along time since the last update
+      setInactivityTimer((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameStatus]);
+
+  const handleClaimWin = async () => {
+    if (!userId) return;
+    const result = await claimInactivityWin(id, userId);
+    if (result?.error) alert(result.error);
+  };
+
   if (fatalError) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4 bg-red-50 text-red-800">
@@ -217,7 +249,6 @@ export default function GamePage({
           </span>
         </div>
       </header>
-
       {/* Container for Player vs Enemy */}
       <div className="relative w-full max-w-5xl flex gap-12 px-4 mt-16">
         {/* Waiting overlay */}
@@ -271,12 +302,24 @@ export default function GamePage({
           />
         </div>
       </div>
-
       {/* / Keyboard */}
       <div className="w-full pb-8 px-2 mt-8 max-w-2xl">
         <Keyboard onKeyPress={wordle.handleKey} usedKeys={wordle.usedKeys} />
       </div>
-
+      {inactivityTimer === 0 && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mt-4">
+          <p className="text-yellow-700 font-bold">
+            Opponent seems to be away.
+          </p>
+          <button
+            onClick={() => handleClaimWin()}
+            className="bg-yellow-500 text-white px-4 py-2 rounded mt-2 hover:bg-yellow-600"
+          >
+            Claim Victory
+          </button>
+        </div>
+      )}
+      ;
       {gameStatus === "finished" && (
         <GameOverModal
           winner={winner}
