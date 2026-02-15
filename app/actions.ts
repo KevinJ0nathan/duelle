@@ -66,7 +66,7 @@ export async function joinQueue(userId: string) {
     .select("*", { count: "exact", head: true }) // dont return data and just count
     .eq("is_target", true);
 
-  if (countError || !count) return;
+  if (countError || !count) return { error: "Could not fetch word count" };
 
   // generate random index to pick random word
   const randomIndex = Math.floor(Math.random() * count);
@@ -125,7 +125,7 @@ export async function createPrivateGame(userId: string) {
     .select("*", { count: "exact", head: true }) // dont return data and just count
     .eq("is_target", true);
 
-  if (countError || !count) return;
+  if (countError || !count) return { error: "Could not fetch word count" };
 
   // generate random index to pick random word
   const randomIndex = Math.floor(Math.random() * count);

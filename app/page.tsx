@@ -71,8 +71,8 @@ export default function Home() {
       if (!userId) return;
 
       const result = await joinQueue(userId);
-      if (result.error) alert(result.error);
-      else if (result.gameId) router.push(`/game/${result.gameId}`);
+      if (result?.error) alert(result.error);
+      else if (result?.gameId) router.push(`/game/${result.gameId}`);
     });
   };
 
