@@ -1,6 +1,16 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@/lib/supabase";
+import { joinQueue, joinPrivate, createPrivateGame } from "./actions";
+
 export default function Home() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  const [isPending, startTransition] = useTransition();
+  const [code, setCode] = useState("");
+
   type TileStatus = "green" | "gold" | "gray" | "empty";
 
   interface Tile {
@@ -38,6 +48,58 @@ export default function Home() {
     return "bg-[#6a6c6e]";
   };
 
+  // Get user id -> anonymous user
+  const getOrCreateUser = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session) return session.user.id;
+    // create anonymous user
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      console.error("Login failed:", error);
+      alert("Could not sign in. Please try again.");
+      return null;
+    }
+    return data.user?.id;
+  };
+
+  // Find match
+  const handleFindMatch = () => {
+    startTransition(async () => {
+      const userId = await getOrCreateUser();
+      if (!userId) return;
+
+      const result = await joinQueue(userId);
+      if (result.error) alert(result.error);
+      else if (result.gameId) router.push(`/game/${result.gameId}`);
+    });
+  };
+
+  // Create private game
+  const handleCreatePrivate = () => {
+    startTransition(async () => {
+      const userId = await getOrCreateUser();
+      if (!userId) return;
+
+      const result = await createPrivateGame(userId);
+      if (result.error) alert(result.error);
+      else if (result.gameId) router.push(`/game/${result.gameId}`);
+    });
+  };
+
+  // Join private game
+  const handleJoinPrivate = () => {
+    if (!code) return;
+    startTransition(async () => {
+      const userId = await getOrCreateUser();
+      if (!userId) return;
+
+      const result = await joinPrivate(code, userId);
+      if (result.error) alert(result.error);
+      else if (result.gameId) router.push(`/game/${result.gameId}`);
+    });
+  };
   return (
     <div className="flex flex-col bg-[var(--bg-cream)] min-h-screen">
       {/* Header */}
@@ -92,8 +154,12 @@ export default function Home() {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              <button className="w-full text-xl p-4 bg-[var(--matcha-dark)] text-white font-semibold rounded-md hover:opacity-90 transition-opacity cursor-pointer">
-                Find Opponent
+              <button
+                className="w-full text-xl p-4 bg-[var(--matcha-dark)] text-white font-semibold rounded-md hover:opacity-90 transition-opacity cursor-pointer"
+                onClick={handleFindMatch}
+                disabled={isPending}
+              >
+                {isPending ? "Connecting..." : "Find Opponent"}
               </button>
 
               <div className="flex items-center gap-3 text-xs text-[#8FAE90] font-bold uppercase tracking-widest py-2">
@@ -106,14 +172,24 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="ENTER CODE"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="min-w-0 flex-1 px-2 py-4 text-center font-semibold text-gray-700 border border-gray-300 rounded-xl shadow-sm focus:outline-none"
                 />
-                <button className="w-1/4 bg-[#3d5a3e] text-white font-bold rounded-xl shadow-sm hover:bg-green-700 transition cursor-pointer">
+                <button
+                  className="w-1/4 bg-[#3d5a3e] text-white font-bold rounded-xl shadow-sm hover:bg-green-700 transition cursor-pointer"
+                  onClick={handleJoinPrivate}
+                  disabled={isPending || !code}
+                >
                   JOIN
                 </button>
               </div>
 
-              <button className="text-center font-medium w-full py-2 text-[var(--matcha-accent)] hover:underline cursor-pointer">
+              <button
+                className="text-center font-medium w-full py-2 text-[var(--matcha-accent)] hover:underline cursor-pointer"
+                onClick={handleCreatePrivate}
+                disabled={isPending}
+              >
                 Create a Private Room
               </button>
             </div>
