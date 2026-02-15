@@ -29,33 +29,34 @@ export function useWordle(gameId: string, userId: string) {
         }
         // Handle success
         if (result.success && result.colors) {
-          setCurrentGuess("");
-          setGuesses((prev) => [...prev, currentGuess]);
-          setHistory((prev) => [...prev, result.colors]);
+          setTimeout(() => {
+            setGuesses((prev) => [...prev, currentGuess]);
+            setHistory((prev) => [...prev, result.colors]);
 
-          setUsedKeys((prev) => {
-            const newKeys = { ...prev };
+            setUsedKeys((prev) => {
+              const newKeys = { ...prev };
 
-            currentGuess.split("").forEach((rawLetter, i) => {
-              const letter = rawLetter.toUpperCase();
-              const color = result.colors[i];
-              const currentColor = newKeys[letter];
+              currentGuess.split("").forEach((rawLetter, i) => {
+                const letter = rawLetter.toUpperCase();
+                const color = result.colors[i];
+                const currentColor = newKeys[letter];
 
-              if (color === "G") {
-                newKeys[letter] = "green";
-              } else if (color === "Y" && currentColor !== "green") {
-                newKeys[letter] = "yellow";
-              } else if (
-                color === "X" &&
-                currentColor !== "green" &&
-                currentColor !== "yellow"
-              ) {
-                newKeys[letter] = "slate";
-              }
+                if (color === "G") {
+                  newKeys[letter] = "green";
+                } else if (color === "Y" && currentColor !== "green") {
+                  newKeys[letter] = "yellow";
+                } else if (
+                  color === "X" &&
+                  currentColor !== "green" &&
+                  currentColor !== "yellow"
+                ) {
+                  newKeys[letter] = "slate";
+                }
+              });
+
+              return newKeys;
             });
-
-            return newKeys;
-          });
+          }, 0);
           // Reset for next turn
           setCurrentGuess("");
         }
