@@ -28,9 +28,12 @@ function Row({
           else if (colors[i] === "Y" || colors[i] == "YELLOW")
             style = "bg-yellow-600 border-yellow-600 text-white";
           else style = "bg-slate-600 border-slate-600 text-white"; // wrong answer
-        } else if (letter) {
-          // Active typing wrong
+        } else if (letter && isCurrent) {
+          // Active typing
           style = "border-gray-600 text-black animate-pulse-short";
+        } else if (letter && !isCurrent) {
+          // This handles edge cases where a word is saved but not colored yet
+          style = "border-gray-400 text-black";
         }
 
         return (
