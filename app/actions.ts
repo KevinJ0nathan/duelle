@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const generateCode = () =>
-  Math.random().toString(36).substring(2, 6).toUpperCase();
+  Math.random().toString(36).substring(2, 8).toUpperCase();
 
 // function to check if user is in an existing game
 async function findActiveGame(userId: string) {
