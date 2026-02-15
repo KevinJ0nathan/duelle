@@ -59,7 +59,7 @@ export default function WordleInput({
     <div className="grid grid-rows-6 gap-2 mb-4">
       {[...Array(6)].map((_, i) => (
         <Row
-          key={`${i}-${turn}-${guesses.length}`}
+          key={i}
           guess={i === turn ? currentGuess : guesses[i] || ""}
           colors={history[i] || []}
           isCurrent={i === turn}
