@@ -330,7 +330,7 @@ export default function GamePage({
               <div className="text-center">
                 <p className="">Share this code with your friend:</p>
                 <div
-                  className="text-5xl font-mono font-black tracking-widest text-green-700 bg-green-50 px-8 py-4 rounded-xl border-2 border-green-200 select-all cursor-pointer"
+                  className="md:text-5xl text-2xl font-mono font-black tracking-widest text-green-700 bg-green-50 px-8 py-4 rounded-xl border-2 border-green-200 select-all cursor-pointer"
                   onClick={() => navigator.clipboard.writeText(joinCode)}
                 >
                   {joinCode}

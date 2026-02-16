@@ -42,7 +42,7 @@ function Row({
         return (
           <div
             key={i}
-            className={`aspect-square md:16 md:h-16 border-2 flex items-center justify-center text-2xl md:text-3xl font-bold uppercase transition-all duration-300 ${style}`}
+            className={`aspect-square w-full h-7 md:h-16 border-2 flex items-center justify-center text-2xl md:text-3xl font-bold uppercase transition-all duration-300 ${style}`}
           >
             {letter}
           </div>
