@@ -85,9 +85,11 @@ export default function WordleInput({
           content = safeToShow.current ? currentGuess : "";
         }
         return (
-          <div className={isCurrentRow && isShaking ? "animate-shake" : ""}>
+          <div
+            key={i}
+            className={isCurrentRow && isShaking ? "animate-shake" : ""}
+          >
             <Row
-              key={i}
               guess={content}
               colors={history[i] || []}
               isCurrent={isCurrentRow}
