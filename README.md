@@ -19,7 +19,6 @@
 - **Framework:** [Next.js 16](https://nextjs.org) (App Router)
 - **UI:** [React 19](https://react.dev), [Tailwind CSS 4](https://tailwindcss.com)
 - **Backend / Realtime:** [Supabase](https://supabase.com) (Auth, Database, Realtime)
-- **State:** [Zustand](https://github.com/pmndrs/zustand)
 - **Icons:** [Lucide React](https://lucide.dev)
 - **Analytics:** [Vercel Analytics](https://vercel.com/analytics)
 
