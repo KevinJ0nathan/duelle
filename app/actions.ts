@@ -116,6 +116,49 @@ export async function joinQueue(userId: string) {
 
   return { gameId: newGame.id };
 }
+// allow users to join game by link
+export async function joinGameById(gameId: string, userId: string) {
+  const { data: game } = await supabase
+    .from("games")
+    .select("status, player1_uid, player2_uid")
+    .eq("id", gameId)
+    .single();
+  // if the current user already in the game then do nothing
+  if (game?.player1_uid === userId || game?.player2_uid === userId) {
+    return { success: true };
+  }
+  // if someone is already player 2
+  if (game?.player2_uid) {
+    return { error: "Game Full" };
+  }
+
+  // join the game
+  const updates = {
+    player2_uid: userId,
+    status: "playing",
+    last_move_at: new Date().toISOString(),
+    last_move_by_uid: userId,
+  };
+
+  // update private table
+  const { error: privateError } = await supabase
+    .from("games")
+    .update(updates)
+    .eq("id", gameId);
+
+  if (privateError) return { error: "Failed to join secure game" };
+
+  // update public table
+  const { error: publicError } = await supabase
+    .from("active_games")
+    .update(updates)
+    .eq("id", gameId);
+
+  if (publicError) return { error: "Failed to join secure game" };
+
+  revalidatePath(`/game/${gameId}`);
+  return { success: true };
+}
 
 // create a private game
 // have a unique 6-character code
@@ -250,17 +293,6 @@ export async function submitGuess(
   guess: string,
   userId: string,
 ) {
-  // Check if the guess is valid (is it a real word?)
-  const { data: wordData, error: wordError } = await supabase
-    .from("dictionary")
-    .select()
-    .eq("word", guess.toLowerCase())
-    .maybeSingle();
-
-  if (!wordData) {
-    console.log("Word is not valid to guess!");
-    return { error: "Not a valid word" };
-  }
   // Check if the game is active
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -271,6 +303,17 @@ export async function submitGuess(
   if (!game || game.status !== "playing") {
     // 'playing' matches your DB default
     return { error: "Game is not active" };
+  }
+  // Check if the guess is valid (is it a real word?)
+  const { data: wordData, error: wordError } = await supabase
+    .from("dictionary")
+    .select()
+    .eq("word", guess.toLowerCase())
+    .maybeSingle();
+
+  if (!wordData) {
+    console.log("Word is not valid to guess!");
+    return { error: "Not a valid word to guess!" };
   }
 
   // Calculate the colors

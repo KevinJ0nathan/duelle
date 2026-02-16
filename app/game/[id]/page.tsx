@@ -9,7 +9,11 @@ import { useState, useEffect, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClientComponentClient } from "@/lib/supabase";
-import { claimInactivityWin, requestRematch } from "@/app/actions";
+import {
+  claimInactivityWin,
+  requestRematch,
+  joinGameById,
+} from "@/app/actions";
 
 export default function GamePage({
   params,
@@ -114,24 +118,15 @@ export default function GamePage({
         // already in
       } else if (isSeatOpen) {
         // if the game is not filled with 2 players yet, get current id then fill it in the db
-        await Promise.all([
-          supabase
-            .from("active_games")
-            .update({
-              player2_uid: currentUserId,
-              status: "playing",
-              last_move_at: new Date().toISOString(),
-            })
-            .eq("id", id),
-          await supabase
-            .from("games")
-            .update({
-              player2_uid: currentUserId,
-              status: "playing",
-              last_move_at: new Date().toISOString(),
-            })
-            .eq("id", id),
-        ]);
+        const joinResult = await joinGameById(id, currentUserId);
+
+        if (joinResult.error) {
+          if (hasRedirected.current) return;
+          hasRedirected.current = true;
+          alert(joinResult.error); // "Game Full" or Error
+          router.push("/");
+          return;
+        }
       } else {
         if (hasRedirected.current) return;
         hasRedirected.current = true;
