@@ -2,7 +2,7 @@
 
 **Wordle, but faster.** A real-time 1v1 Wordle game where you and an opponent race to guess the same 5-letter word. First to solve it wins.
 
-![Duelle](duelle_thumbnail.png)
+![Duelle](/public/duelle_thumbnail.png)
 
 ## Features
 
@@ -63,12 +63,12 @@ Open [http://localhost:3000](http://localhost:3000). Use **Find Opponent**, **Cr
 
 ### Scripts
 
-| Command        | Description              |
-|----------------|--------------------------|
-| `npm run dev`  | Start dev server         |
-| `npm run build`| Production build         |
-| `npm run start`| Start production server  |
-| `npm run lint` | Run ESLint               |
+| Command         | Description             |
+| --------------- | ----------------------- |
+| `npm run dev`   | Start dev server        |
+| `npm run build` | Production build        |
+| `npm run start` | Start production server |
+| `npm run lint`  | Run ESLint              |
 
 ## How It Works
 
