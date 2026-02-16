@@ -5,6 +5,7 @@ type WordleGridProps = {
   guesses: string[]; // List of words they already submitted
   history: string[][]; // Matrix of colors [['G','X','Y','X','X'], ...]
   turn: number; // Which row index is currently active or is the user typing on (0-5)
+  isShaking?: boolean; // check if its supposed to be shaking or not
 };
 
 function Row({
@@ -56,6 +57,7 @@ export default function WordleInput({
   guesses,
   history,
   turn,
+  isShaking = false,
 }: WordleGridProps) {
   // track prev turn number when it change
   const prevTurn = useRef(turn);
@@ -83,12 +85,14 @@ export default function WordleInput({
           content = safeToShow.current ? currentGuess : "";
         }
         return (
-          <Row
-            key={i}
-            guess={content}
-            colors={history[i] || []}
-            isCurrent={i === turn}
-          />
+          <div className={isCurrentRow && isShaking ? "animate-shake" : ""}>
+            <Row
+              key={i}
+              guess={content}
+              colors={history[i] || []}
+              isCurrent={isCurrentRow}
+            />
+          </div>
         );
       })}
     </div>

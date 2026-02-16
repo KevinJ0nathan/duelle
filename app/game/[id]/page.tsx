@@ -41,13 +41,27 @@ export default function GamePage({
     useState(false);
 
   const [fatalError, setFatalError] = useState<string | null>(null);
-
-  const wordle = useWordle(id, userId || "");
+  const [isShaking, setIsShaking] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleRematchClick = async () => {
     setRematchRequested(true);
-    await requestRematch(id, userId!);
+    const result = await requestRematch(id, userId!);
+
+    if (result && result.newGameId) {
+      router.push(`game/${result.newGameId}`);
+    }
   };
+
+  const showInvalidError = (msg: string = "Not in word list") => {
+    setIsShaking(true);
+    setToastMessage(msg);
+
+    setTimeout(() => setIsShaking(false), 600); // remove shaking after 600 ms
+    setTimeout(() => setToastMessage(null), 2000); // remove toast message after 2s
+  };
+
+  const wordle = useWordle(id, userId || "", showInvalidError);
 
   // Initialize & Authentication
   useEffect(() => {
@@ -232,6 +246,27 @@ export default function GamePage({
     }, 1000);
     return () => clearInterval(interval);
   }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
+
+  // Rematch checker
+  useEffect(() => {
+    // Only run if game is finished
+    if (gameStatus !== "finished") return;
+
+    const interval = setInterval(async () => {
+      // Check if there is rematch id
+      const { data } = await supabase
+        .from("active_games")
+        .select("rematch_id")
+        .eq("id", id)
+        .single();
+      // if it exist then redirect user to rematch
+      if (data?.rematch_id) {
+        router.push(`/game/${data.rematch_id}`);
+      }
+    }, 3000); // check every 3 seconds
+    return () => clearInterval(interval);
+  }, [id, gameStatus, router, supabase]);
+
   if (fatalError) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4 bg-red-50 text-red-800">
@@ -250,6 +285,13 @@ export default function GamePage({
 
   return (
     <div className="flex flex-col justify-start items-center h-screen bg-[#F9F8F6]">
+      {toastMessage && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-toast pointer-events-none">
+          <div className="bg-black/80 text-white px-4 py-2 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
+            {toastMessage}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="w-full px-8 py-6 flex justify-between items-center bg-transparent">
         <div className="flex items-center gap-3">

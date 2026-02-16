@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { submitGuess } from "@/app/actions";
 
-export function useWordle(gameId: string, userId: string) {
+export function useWordle(
+  gameId: string,
+  userId: string,
+  onError?: (msg: string) => void,
+) {
   const [currentGuess, setCurrentGuess] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
   const [history, setHistory] = useState<string[][]>([]); // history of colors
@@ -16,14 +20,18 @@ export function useWordle(gameId: string, userId: string) {
       if (isProcessing) return;
 
       if (key === "ENTER") {
-        if (currentGuess.length !== 5) return; // guesses must be 5 letters
+        if (currentGuess.length !== 5) {
+          if (onError) onError("Not enough letters");
+          return;
+        } // guesses must be 5 letters
 
         setIsProcessing(true);
         // Call the server action
         const result = await submitGuess(gameId, currentGuess, userId);
         // Handle error
         if (result.error) {
-          alert(result.error);
+          if (onError) onError(result.error);
+          else alert(result.error);
           setIsProcessing(false);
           return;
         }
