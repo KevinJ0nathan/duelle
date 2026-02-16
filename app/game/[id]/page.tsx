@@ -286,8 +286,8 @@ export default function GamePage({
   return (
     <div className="flex flex-col justify-start items-center h-screen bg-[#F9F8F6]">
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-toast pointer-events-none">
-          <div className="bg-black/80 text-white px-4 py-2 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
+        <div className="fixed top-20 left-0 w-full flex justify-center z-50 pointer-events-none">
+          <div className="bg-black/80 text-white px-4 py-2 rounded-md text-sm font-bold shadow-lg whitespace-nowrap animate-toast">
             {toastMessage}
           </div>
         </div>
@@ -342,6 +342,7 @@ export default function GamePage({
             guesses={wordle.guesses}
             history={wordle.history}
             turn={wordle.guesses.length}
+            isShaking={isShaking}
           />
         </div>
         <div className="flex flex-1 flex-col items-center opacity-80">
@@ -353,7 +354,6 @@ export default function GamePage({
             guesses={opponentGuesses}
             history={opponentHistory}
             turn={opponentGuesses.length}
-            isShaking={isShaking}
           />
         </div>
       </div>
