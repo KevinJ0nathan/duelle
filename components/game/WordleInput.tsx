@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 type WordleGridProps = {
   currentGuess: string; // The word the user is currently typing
   guesses: string[]; // List of words they already submitted
@@ -55,16 +57,40 @@ export default function WordleInput({
   history,
   turn,
 }: WordleGridProps) {
+  // track prev turn number when it change
+  const prevTurn = useRef(turn);
+  const safeToShow = useRef(true);
+
+  // did the turn increase
+  if (turn > prevTurn.current) {
+    safeToShow.current = false;
+    prevTurn.current = turn;
+  }
+
+  // did the input finally clear
+  if (currentGuess === "") {
+    safeToShow.current = true;
+  }
   return (
     <div className="grid grid-rows-6 gap-2 mb-4">
-      {[...Array(6)].map((_, i) => (
-        <Row
-          key={i}
-          guess={i === turn ? currentGuess : guesses[i] || ""}
-          colors={history[i] || []}
-          isCurrent={i === turn}
-        />
-      ))}
+      {[...Array(6)].map((_, i) => {
+        const isCurrentRow = i === turn;
+        let content = "";
+        if (i < turn) {
+          // past row shows history
+          content = guesses[i] || "";
+        } else if (isCurrentRow) {
+          content = safeToShow.current ? currentGuess : "";
+        }
+        return (
+          <Row
+            key={i}
+            guess={content}
+            colors={history[i] || []}
+            isCurrent={i === turn}
+          />
+        );
+      })}
     </div>
   );
 }

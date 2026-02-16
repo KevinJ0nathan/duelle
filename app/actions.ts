@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,6 +47,8 @@ export async function joinQueue(userId: string) {
       .update({
         player2_uid: userId,
         status: "playing",
+        last_move_at: new Date().toISOString(),
+        last_move_by_uid: userId,
       })
       .eq("id", openGame.id);
 
@@ -54,6 +57,8 @@ export async function joinQueue(userId: string) {
       .update({
         player2_uid: userId,
         status: "playing",
+        last_move_at: new Date().toISOString(),
+        last_move_by_uid: userId,
       })
       .eq("id", openGame.id);
 
@@ -89,6 +94,8 @@ export async function joinQueue(userId: string) {
       status: "waiting",
       secret_word: secret,
       is_private: false,
+      last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .select("id")
     .single();
@@ -103,6 +110,8 @@ export async function joinQueue(userId: string) {
     is_private: false,
     p1_scores: [],
     p2_scores: [],
+    last_move_at: new Date().toISOString(),
+    last_move_by_uid: userId,
   });
 
   return { gameId: newGame.id };
@@ -149,6 +158,8 @@ export async function createPrivateGame(userId: string) {
       secret_word: secret,
       is_private: true,
       join_code: joinCode,
+      last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .select("id")
     .single();
@@ -164,6 +175,8 @@ export async function createPrivateGame(userId: string) {
     join_code: joinCode,
     p1_scores: [],
     p2_scores: [],
+    last_move_at: new Date().toISOString(),
+    last_move_by_uid: userId,
   });
 
   return { gameId: newGame.id, code: joinCode };
@@ -198,6 +211,8 @@ export async function joinPrivate(code: string, userId: string) {
     .update({
       player2_uid: userId,
       status: "playing",
+      last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .eq("id", game.id);
 
@@ -206,6 +221,8 @@ export async function joinPrivate(code: string, userId: string) {
     .update({
       player2_uid: userId,
       status: "playing",
+      last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .eq("id", game.id);
 
@@ -324,6 +341,7 @@ export async function submitGuess(
       status: newStatus,
       winner_uid: winnerId,
       last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .eq("id", gameId);
 
@@ -339,6 +357,7 @@ export async function submitGuess(
       // Sync the player ID if they just joined/moved
       player2_uid: game.player2_uid,
       last_move_at: new Date().toISOString(),
+      last_move_by_uid: userId,
     })
     .eq("id", gameId);
 
@@ -421,6 +440,7 @@ export async function requestRematch(gameId: string, userId: string) {
         is_private: freshGame.is_private,
         join_code: freshGame.join_code,
         last_move_at: new Date().toISOString(),
+        last_move_by_uid: freshGame.player1_uid,
       })
       .select("id")
       .single();
@@ -438,6 +458,7 @@ export async function requestRematch(gameId: string, userId: string) {
       p1_scores: [],
       p2_scores: [],
       last_move_at: new Date().toISOString(),
+      last_move_by_uid: freshGame.player1_uid,
     });
 
     // Link old game to the new game
@@ -454,4 +475,54 @@ export async function requestRematch(gameId: string, userId: string) {
   }
 
   return { status: "waiting" };
+}
+
+export async function claimInactivityWin(gameId: string, userId: string) {
+  const { data: game, error } = await supabase
+    .from("active_games")
+    .select("last_move_at, status, player1_uid, player2_uid")
+    .eq("id", gameId)
+    .single();
+
+  if (error || !game) {
+    return { error: "Game not found." };
+  }
+
+  if (game.status !== "playing") {
+    return { error: "Game is already finished." };
+  }
+
+  // Verify the Claimant is actually in the game
+  if (game.player1_uid !== userId && game.player2_uid !== userId) {
+    return { error: "You are not a player in this game." };
+  }
+
+  // Check the time
+  const lastMove = new Date(game.last_move_at).getTime();
+  const now = new Date().getTime();
+  const diffInSeconds = (now - lastMove) / 1000;
+  const TIMEOUT_LIMIT = 120;
+
+  if (diffInSeconds < TIMEOUT_LIMIT) {
+    const remaining = Math.ceil(TIMEOUT_LIMIT - diffInSeconds);
+    return { error: `Too early! Wait ${remaining} more seconds.` };
+  }
+
+  const updates = {
+    status: "finished",
+    winner_uid: userId, // the person who click the button wins
+  };
+
+  // Update both tables to ensure consistency
+  const { error: updateError } = await supabase
+    .from("active_games")
+    .update(updates)
+    .eq("id", gameId);
+
+  if (updateError) return { error: "Failed to update game status." };
+
+  await supabase.from("games").update(updates).eq("id", gameId);
+
+  revalidatePath(`/game/${gameId}`);
+  return { success: true };
 }
