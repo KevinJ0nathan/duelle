@@ -535,6 +535,11 @@ export async function claimInactivityWin(gameId: string, userId: string) {
     .update(updates)
     .eq("id", gameId);
 
+  const { error: updateErrorPrivate } = await supabase
+    .from("games")
+    .update(updates)
+    .eq("id", gameId);
+
   if (updateError) return { error: "Failed to update game status." };
 
   await supabase.from("games").update(updates).eq("id", gameId);
