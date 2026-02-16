@@ -101,6 +101,3 @@ duelle/
 
 The app is set up for [Vercel](https://vercel.com). Connect your repo, add the same env vars in the project settings, and deploy. The project uses `@vercel/analytics` for optional analytics.
 
-## License
-
-Private / unlicensed unless you specify otherwise.
