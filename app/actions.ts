@@ -127,7 +127,23 @@ export async function createPrivateGame(userId: string) {
   if (existingGame) {
     return { gameId: existingGame.id };
   }
-  const joinCode = generateCode();
+
+  let joinCode = "";
+  let isUnique = false;
+
+  while (!isUnique) {
+    joinCode = generateCode();
+
+    const { data } = await supabase
+      .from("games")
+      .select("id")
+      .eq("join_code", joinCode)
+      .maybeSingle();
+    // if data is null then code is unique
+    if (!data) {
+      isUnique = true;
+    }
+  }
 
   const { count, error: countError } = await supabase
     .from("dictionary")
