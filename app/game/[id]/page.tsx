@@ -59,7 +59,7 @@ export default function GamePage({
     const result = await requestRematch(id, userId!);
 
     if (result && result.newGameId) {
-      router.push(`game/${result.newGameId}`);
+      router.push(`/game/${result.newGameId}`);
     }
 
     // Timeout safety so user wont be stuck in rematch screen
@@ -372,7 +372,7 @@ export default function GamePage({
         </div>
       </div>
       {/* / Keyboard */}
-      <div className="w-full pb-8 px-2 mt-8 max-w-2xl">
+      <div className="w-full pb-8 px-2 md:mt-8 max-w-2xl fixed bottom-1 md:static">
         <Keyboard onKeyPress={wordle.handleKey} usedKeys={wordle.usedKeys} />
       </div>
 
