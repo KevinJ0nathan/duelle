@@ -284,9 +284,9 @@ export default function GamePage({
     );
 
   return (
-    <div className="flex flex-col justify-start items-center h-screen bg-[#F9F8F6] relative">
+    <div className="flex flex-col justify-start items-center h-screen bg-[#F9F8F6]">
       {toastMessage && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-toast pointer-events-none">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-toast pointer-events-none">
           <div className="bg-black/80 text-white px-4 py-2 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
             {toastMessage}
           </div>
@@ -353,6 +353,7 @@ export default function GamePage({
             guesses={opponentGuesses}
             history={opponentHistory}
             turn={opponentGuesses.length}
+            isShaking={isShaking}
           />
         </div>
       </div>
