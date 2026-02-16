@@ -5,7 +5,7 @@ import WordleInput from "@/components/game/WordleInput";
 import GameOverModal from "@/components/game/GameOverModal";
 
 import { useWordle } from "@/hooks/useWordle";
-import { useState, useEffect, use, useRef } from "react";
+import { useState, useEffect, use, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClientComponentClient } from "@/lib/supabase";
@@ -13,6 +13,7 @@ import {
   claimInactivityWin,
   requestRematch,
   joinGameById,
+  cancelRematch,
 } from "@/app/actions";
 
 export default function GamePage({
@@ -43,27 +44,45 @@ export default function GamePage({
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentRematchRequested, setOpponentRematchRequested] =
     useState(false);
+  const [rematchStatus, setRematchStatus] = useState<
+    "idle" | "waiting" | "timeout"
+  >("idle");
 
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleRematchClick = async () => {
+    setRematchStatus("waiting");
     setRematchRequested(true);
+
     const result = await requestRematch(id, userId!);
 
     if (result && result.newGameId) {
       router.push(`game/${result.newGameId}`);
     }
+
+    // Timeout safety so user wont be stuck in rematch screen
+    setTimeout(() => {
+      setRematchStatus((currentStatus) => {
+        if (currentStatus === "waiting") {
+          cancelRematch(id, userId!);
+
+          showInvalidError("Opponent Disconnected");
+          return "timeout"; // stop loading spinner
+        }
+        return currentStatus;
+      });
+    }, 15000); // wait for 15s
   };
 
-  const showInvalidError = (msg: string = "Not in word list") => {
+  const showInvalidError = useCallback((msg: string = "Not in word list") => {
     setIsShaking(true);
     setToastMessage(msg);
 
     setTimeout(() => setIsShaking(false), 600); // remove shaking after 600 ms
     setTimeout(() => setToastMessage(null), 2000); // remove toast message after 2s
-  };
+  }, []);
 
   const wordle = useWordle(id, userId || "", showInvalidError);
 
@@ -201,8 +220,8 @@ export default function GamePage({
 
           // Check for rematch
           const opponentRematch = isPlayer1
-            ? newGame.player2_rematch
-            : newGame.player1_rematch;
+            ? newGame.p2_rematch
+            : newGame.p1_rematch;
           setOpponentRematchRequested(opponentRematch);
           // Auto redirect to new game if rematch exist
           if (newGame.rematch_id) {
@@ -364,6 +383,7 @@ export default function GamePage({
           isRematchRequested={rematchRequested}
           isOpponentRematchRequested={opponentRematchRequested}
           onRematch={handleRematchClick}
+          rematchStatus={rematchStatus}
           onExit={() => router.push("/")}
         />
       )}

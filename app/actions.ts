@@ -536,6 +536,29 @@ export async function requestRematch(gameId: string, userId: string) {
   return { status: "waiting" };
 }
 
+export async function cancelRematch(gameId: string, userId: string) {
+  // identify who is calling
+  const { data: game } = await supabase
+    .from("games")
+    .select("player1_uid, player2_uid")
+    .eq("id", gameId)
+    .single();
+
+  if (!game) return;
+
+  const isPlayer1 = game.player1_uid === userId;
+  const myRematchCol = isPlayer1 ? "p1_rematch" : "p2_rematch";
+  // clear both rematch col
+  const updates = { [myRematchCol]: false };
+
+  await Promise.all([
+    supabase.from("games").update(updates).eq("id", gameId),
+    supabase.from("active_games").update(updates).eq("id", gameId),
+  ]);
+  revalidatePath(`/game/${gameId}`);
+  return { success: true };
+}
+
 export async function claimInactivityWin(gameId: string, userId: string) {
   const { data: game, error } = await supabase
     .from("active_games")

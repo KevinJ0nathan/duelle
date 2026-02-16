@@ -4,6 +4,7 @@ interface GameOverModalProps {
   isRematchRequested: boolean;
   isOpponentRematchRequested: boolean;
   onRematch: () => void;
+  rematchStatus: "idle" | "waiting" | "timeout";
   onExit: () => void;
 }
 
@@ -13,11 +14,15 @@ export default function GameOverModal({
   isRematchRequested,
   isOpponentRematchRequested,
   onRematch,
+  rematchStatus,
   onExit,
 }: GameOverModalProps) {
   // determine who won
   const isVictory = winner === currentUserId;
   const isDraw = winner === null;
+
+  const isWaiting = rematchStatus === "waiting";
+  const isTimeout = rematchStatus === "timeout";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -57,40 +62,39 @@ export default function GameOverModal({
 
         {/* Status for rematch */}
         {isOpponentRematchRequested && !isRematchRequested && (
-          <div className="bg-green-50 text-green-800 text-sm font-bold py-2 px-4 rounded-lg mb-6 animate-pulse border border-green-200">
+          <div className="bg-yellow-100 text-yellow-800 text-sm font-bold py-2 px-4 rounded-lg mb-6 animate-pulse border border-green-200">
             Opponent wants a rematch!
           </div>
         )}
 
-        {isRematchRequested && !isOpponentRematchRequested && (
+        {/* {isRematchRequested && !isOpponentRematchRequested && (
           <div className="bg-yellow-50 text-yellow-800 text-sm font-bold py-2 px-4 rounded-lg mb-6 border border-yellow-200">
             Waiting for opponent...
           </div>
-        )}
+        )} */}
 
         {/* Action buttons */}
         <div className="space-y-3">
           {/* For rematch */}
           <button
             onClick={onRematch}
-            disabled={isRematchRequested}
+            disabled={isWaiting || isTimeout || isRematchRequested}
             className={`w-full py-4 text-lg font-bold rounded-xl transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm
               ${
                 isRematchRequested
-                  ? "bg-gray-100 text-gray-400 cursor-default border border-gray-200"
-                  : "bg-[#2D4030] text-white hover:bg-[#1a261c] hover:shadow-lg hover:-translate-y-0.5"
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : isOpponentRematchRequested
+                    ? "bg-yellow-500 hover:bg-yellow-600 text-white animate-pulse"
+                    : "bg-green-600 hover:bg-green-700 text-white"
               }`}
           >
-            {isRematchRequested ? (
-              <>
-                <span className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
-                Waiting...
-              </>
-            ) : (
-              <>
-                <span>🔄</span> Rematch
-              </>
-            )}
+            {isTimeout
+              ? "Opponent Disconnected"
+              : isRematchRequested
+                ? "Waiting for Opponent..."
+                : isOpponentRematchRequested
+                  ? "Accept Rematch Request"
+                  : "Rematch"}
           </button>
 
           {/* For exiting the game */}
