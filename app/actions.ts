@@ -128,10 +128,15 @@ export async function leaveQueue(gameId: string, userId: string) {
   if (!game) return;
   // only allow the creator of the room to delete, and only if they are still waiting
   if (game.status === "waiting" && game.player1_uid === userId) {
-    await Promise.all([
-      supabase.from("games").delete().eq("id", gameId),
-      supabase.from("active_games").delete().eq("id", gameId),
-    ]);
+    const { error: activeError } = await supabase
+      .from("active_games")
+      .delete()
+      .eq("id", gameId);
+
+    const { error: gameError } = await supabase
+      .from("games")
+      .delete()
+      .eq("id", gameId);
   }
 
   //Clear the cache so the "Play" button doesn't find this game again
