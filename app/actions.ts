@@ -133,6 +133,10 @@ export async function leaveQueue(gameId: string, userId: string) {
       supabase.from("active_games").delete().eq("id", gameId),
     ]);
   }
+
+  //Clear the cache so the "Play" button doesn't find this game again
+  revalidatePath("/");
+  return { success: true };
 }
 
 // allow users to join game by link
