@@ -14,6 +14,7 @@ import {
   requestRematch,
   joinGameById,
   cancelRematch,
+  leaveQueue,
 } from "@/app/actions";
 
 export default function GamePage({
@@ -61,7 +62,6 @@ export default function GamePage({
     if (result && result.newGameId) {
       router.push(`/game/${result.newGameId}`);
     }
-
     // Timeout safety so user wont be stuck in rematch screen
     setTimeout(() => {
       setRematchStatus((currentStatus) => {
@@ -74,6 +74,13 @@ export default function GamePage({
         return currentStatus;
       });
     }, 15000); // wait for 15s
+  };
+
+  const handleExitQueue = async () => {
+    // delete game from db
+    await leaveQueue(id, userId!);
+    // redirect users to landing page
+    router.push("/");
   };
 
   const showInvalidError = useCallback((msg: string = "Not in word list") => {
@@ -111,7 +118,7 @@ export default function GamePage({
         .from("active_games")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error || !game) {
         if (hasRedirected.current) return;
@@ -199,6 +206,18 @@ export default function GamePage({
         },
         (payload) => {
           const newGame = payload.new as any;
+
+          // // Check if game status is changing from waiting to playing
+          // if (gameStatus === "waiting" && newGame.status === "playing") {
+          //   // Play sound
+          //   try {
+          //     const audio = new Audio("/match.mp3");
+          //     audio.volume = 0.5;
+          //     audio.play().catch((e) => console.log("Audio Blocked:", e));
+          //   } catch (err) {
+          //     console.error("Sound error", err);
+          //   }
+          // }
 
           // update status e.g from waiting to playing
           setGameStatus(newGame.status);
@@ -342,6 +361,13 @@ export default function GamePage({
                 Searching for a match...
               </p>
             )}
+
+            <button
+              onClick={handleExitQueue}
+              className="text-red-500 font-bold text-sm hover:underline cursor-pointer"
+            >
+              Cancel Search
+            </button>
           </div>
         )}
 

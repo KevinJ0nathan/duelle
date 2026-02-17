@@ -116,6 +116,25 @@ export async function joinQueue(userId: string) {
 
   return { gameId: newGame.id };
 }
+
+// Leave queue
+export async function leaveQueue(gameId: string, userId: string) {
+  const { data: game } = await supabase
+    .from("games")
+    .select("status, player1_uid")
+    .eq("id", gameId)
+    .single();
+
+  if (!game) return;
+  // only allow the creator of the room to delete, and only if they are still waiting
+  if (game.status === "waiting" && game.player1_uid === userId) {
+    await Promise.all([
+      supabase.from("games").delete().eq("id", gameId),
+      supabase.from("active_games").delete().eq("id", gameId),
+    ]);
+  }
+}
+
 // allow users to join game by link
 export async function joinGameById(gameId: string, userId: string) {
   const { data: game } = await supabase
