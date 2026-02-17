@@ -261,25 +261,25 @@ export default function GamePage({
     return () => clearInterval(interval);
   }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
 
-  // Rematch checker
-  useEffect(() => {
-    // Only run if game is finished
-    if (gameStatus !== "finished") return;
+  // // Rematch checker
+  // useEffect(() => {
+  //   // Only run if game is finished
+  //   if (gameStatus !== "finished") return;
 
-    const interval = setInterval(async () => {
-      // Check if there is rematch id
-      const { data } = await supabase
-        .from("active_games")
-        .select("rematch_id")
-        .eq("id", id)
-        .single();
-      // if it exist then redirect user to rematch
-      if (data?.rematch_id) {
-        router.push(`/game/${data.rematch_id}`);
-      }
-    }, 3000); // check every 3 seconds
-    return () => clearInterval(interval);
-  }, [id, gameStatus, router, supabase]);
+  //   const interval = setInterval(async () => {
+  //     // Check if there is rematch id
+  //     const { data } = await supabase
+  //       .from("active_games")
+  //       .select("rematch_id")
+  //       .eq("id", id)
+  //       .single();
+  //     // if it exist then redirect user to rematch
+  //     if (data?.rematch_id) {
+  //       router.push(`/game/${data.rematch_id}`);
+  //     }
+  //   }, 3000); // check every 3 seconds
+  //   return () => clearInterval(interval);
+  // }, [id, gameStatus, router, supabase]);
 
   if (fatalError) {
     return (
