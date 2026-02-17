@@ -182,7 +182,7 @@ export default function GamePage({
       setLoading(false);
     };
     initializeGame();
-  }, [id, userId, router, supabase, wordle]);
+  }, [id]);
 
   // Useeffect for realtime updates
   useEffect(() => {
@@ -233,7 +233,7 @@ export default function GamePage({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, userId, loading, supabase, router]);
+  }, [id, userId, loading]);
 
   // Auto win checker if the opponent is inactive
   useEffect(() => {
