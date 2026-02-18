@@ -73,7 +73,7 @@ export default function GamePage({
         }
         return currentStatus;
       });
-    }, 15000); // wait for 15s
+    }, 60000); // wait for 1 minute
   };
 
   const handleExitQueue = async () => {
