@@ -6,6 +6,7 @@ interface GameOverModalProps {
   onRematch: () => void;
   rematchStatus: "idle" | "waiting" | "timeout";
   onExit: () => void;
+  secretWord: string | null;
 }
 
 export default function GameOverModal({
@@ -16,6 +17,7 @@ export default function GameOverModal({
   onRematch,
   rematchStatus,
   onExit,
+  secretWord,
 }: GameOverModalProps) {
   // determine who won
   const isVictory = winner === currentUserId;
@@ -44,7 +46,8 @@ export default function GameOverModal({
                 DRAW
               </h2>
               <p className="text-gray-500 font-medium mt-2">
-                No one found the word.
+                No one found the word. <br />
+                The word was <b className="text-green-700">{secretWord}</b>.
               </p>
             </>
           ) : (
@@ -54,7 +57,8 @@ export default function GameOverModal({
                 DEFEAT
               </h2>
               <p className="text-gray-500 font-medium mt-2">
-                Better luck next time.
+                Better luck next time. <br />
+                The word was <b className="text-green-700">{secretWord}</b>.
               </p>
             </>
           )}

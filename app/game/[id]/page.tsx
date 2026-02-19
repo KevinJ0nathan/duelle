@@ -15,6 +15,7 @@ import {
   joinGameById,
   cancelRematch,
   leaveQueue,
+  getSecretWord,
 } from "@/app/actions";
 
 export default function GamePage({
@@ -41,6 +42,7 @@ export default function GamePage({
   const [lastMoveAt, setLastMoveAt] = useState<string | null>(null);
   const [lastMoveBy, setLastMoveBy] = useState<string | null>(null);
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [secretWord, setSecretWord] = useState<string | null>(null);
   // for rematch
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentRematchRequested, setOpponentRematchRequested] =
@@ -235,6 +237,10 @@ export default function GamePage({
           }
           if (newGame.status === "finished") {
             setWinner(newGame.winner_uid);
+
+            getSecretWord(id).then((res) => {
+              if (res.secret) setSecretWord(res.secret.toUpperCase());
+            });
           }
 
           // Check for rematch
@@ -411,6 +417,7 @@ export default function GamePage({
           onRematch={handleRematchClick}
           rematchStatus={rematchStatus}
           onExit={() => router.push("/")}
+          secretWord={secretWord}
         />
       )}
     </div>

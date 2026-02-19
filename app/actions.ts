@@ -641,3 +641,17 @@ export async function claimInactivityWin(gameId: string, userId: string) {
   revalidatePath(`/game/${gameId}`);
   return { success: true };
 }
+
+export async function getSecretWord(gameId: string) {
+  const { data: game } = await supabase
+    .from("games")
+    .select("status, secret_word")
+    .eq("id", gameId)
+    .single();
+  // Only return word once game is finished
+  if (game && game.status === "finished") {
+    return { secret: game.secret_word };
+  }
+
+  return { error: "Game is still in progress!" };
+}
