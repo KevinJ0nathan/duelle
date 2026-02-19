@@ -455,58 +455,46 @@ export async function submitGuess(
 
 // Rematch function
 export async function requestRematch(gameId: string, userId: string) {
-  // Fetch current game state
+  // 1. Initial check to see if a rematch already exists
   const { data: initialGame } = await supabase
     .from("games")
-    .select("player1_uid, player2_uid")
+    .select("player1_uid, player2_uid, rematch_id")
     .eq("id", gameId)
     .single();
 
   if (!initialGame) return { error: "Game not found" };
+  if (initialGame.rematch_id)
+    return { status: "started", newGameId: initialGame.rematch_id };
 
-  // Determine which player is clicking
   const isPlayer1 = initialGame.player1_uid === userId;
   const myRematchCol = isPlayer1 ? "p1_rematch" : "p2_rematch";
 
-  // Update the current player vote
-  await supabase
+  // 2. Atomic Update: Set your rematch status and get the NEW state of the row immediately
+  const { data: updatedGame, error: updateError } = await supabase
     .from("games")
     .update({ [myRematchCol]: true })
-    .eq("id", gameId);
-
-  await supabase
-    .from("active_games")
-    .update({ [myRematchCol]: true })
-    .eq("id", gameId);
-
-  // Fetch data again after update
-  const { data: freshGame } = await supabase
-    .from("games")
-    .select("*")
     .eq("id", gameId)
+    .select("*")
     .single();
 
-  if (!freshGame) return { error: "Game error" };
+  if (updateError || !updatedGame) return { error: "Update failed" };
 
-  if (freshGame.rematch_id) {
-    return { status: "started", newGameId: freshGame.rematch_id };
-  }
+  // 3. If BOTH are now true, one player handles the creation logic
+  if (updatedGame.p1_rematch && updatedGame.p2_rematch) {
+    // Check again if the other player already created the rematch_id in the split second before us
+    if (updatedGame.rematch_id) {
+      return { status: "started", newGameId: updatedGame.rematch_id };
+    }
 
-  if (freshGame.p1_rematch && freshGame.p2_rematch) {
-    // Create a new game
-
-    // GET a new secret word
+    // 4. Create New Game Logic
     const { count, error: countError } = await supabase
       .from("dictionary")
-      .select("*", { count: "exact", head: true }) // dont return data and just count
+      .select("*", { count: "exact", head: true })
       .eq("is_target", true);
 
-    if (countError || !count) return;
+    if (countError || !count) return { error: "Word fetch failed" };
 
-    // generate random index to pick random word
     const randomIndex = Math.floor(Math.random() * count);
-
-    // Fetch only the single word at the index
     const { data: secretWordData } = await supabase
       .from("dictionary")
       .select("word")
@@ -516,51 +504,53 @@ export async function requestRematch(gameId: string, userId: string) {
 
     const secret = secretWordData?.word;
 
-    // Create the new game row
-    const { data: newGame, error } = await supabase
+    const { data: newGame, error: createError } = await supabase
       .from("games")
       .insert({
-        player1_uid: freshGame.player1_uid,
-        player2_uid: freshGame.player2_uid,
+        player1_uid: updatedGame.player1_uid,
+        player2_uid: updatedGame.player2_uid,
         status: "playing",
         secret_word: secret,
-        is_private: freshGame.is_private,
-        join_code: freshGame.join_code,
+        is_private: updatedGame.is_private,
+        join_code: updatedGame.join_code,
         last_move_at: new Date().toISOString(),
-        last_move_by_uid: freshGame.player1_uid,
+        last_move_by_uid: updatedGame.player1_uid,
       })
       .select("id")
       .single();
 
-    if (error || !newGame) return { error: "Failed to create rematch" };
+    if (createError || !newGame) return { error: "Failed to create rematch" };
 
-    // Create Public Mirror
+    // 5. Create Public Mirror
     await supabase.from("active_games").insert({
       id: newGame.id,
-      player1_uid: freshGame.player1_uid,
-      player2_uid: freshGame.player2_uid,
+      player1_uid: updatedGame.player1_uid,
+      player2_uid: updatedGame.player2_uid,
       status: "playing",
-      is_private: freshGame.is_private,
-      join_code: freshGame.join_code,
+      is_private: updatedGame.is_private,
+      join_code: updatedGame.join_code,
       p1_scores: [],
       p2_scores: [],
       last_move_at: new Date().toISOString(),
-      last_move_by_uid: freshGame.player1_uid,
+      last_move_by_uid: updatedGame.player1_uid,
     });
 
-    // Link old game to the new game
-    await supabase
-      .from("games")
-      .update({ rematch_id: newGame.id })
-      .eq("id", gameId);
-    await supabase
-      .from("active_games")
-      .update({ rematch_id: newGame.id })
-      .eq("id", gameId);
+    // 6. Link the old game to the new game
+    await Promise.all([
+      supabase
+        .from("games")
+        .update({ rematch_id: newGame.id })
+        .eq("id", gameId),
+      supabase
+        .from("active_games")
+        .update({ rematch_id: newGame.id, [myRematchCol]: true })
+        .eq("id", gameId),
+    ]);
 
     return { status: "started", newGameId: newGame.id };
   }
 
+  // If we are the first to click, or the other hasn't updated yet
   return { status: "waiting" };
 }
 
