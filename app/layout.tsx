@@ -16,14 +16,49 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-export const metadata = {
-  title: "Duelle",
+export const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Duelle",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Any",
   description:
-    "A real-time 1v1 Wordle showdown. Compete against friends, solve the word before they do, and prove who has the sharper mind in Duelle.",
+    "A real-time multiplayer word guessing game where players compete head-to-head to solve the same puzzle faster.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
+
+export const metadata = {
+  metadataBase: new URL("https://duelle.vercel.app"),
+
+  title: {
+    template: "%s | Duelle",
+    default: "Duelle | Real-Time Multiplayer Word Game.",
+  },
+  description:
+    "Play Duelle, a fast-paced multiplayer word guessing game. Challenge friends in real time, solve the hidden word first, and prove your vocabulary skills.",
+
+  keyWords: [
+    "multiplayer word game",
+    "word guessing game",
+    "play word game with friends",
+    "competitive word puzzle",
+    "real-time word game",
+    "vocabulary challenge",
+    "duelle game",
+  ],
+
+  alternates: {
+    canonical: "/",
+  },
+
   openGraph: {
-    title: "Duelle",
+    title: "Duelle - Real Time Word Battle",
     description:
-      "A real-time 1v1 Wordle showdown. Compete against friends, solve the word before they do, and prove who has the sharper mind in Duelle.",
+      "Challenge friends to a live word guessing duel. Think fast, solve first, win.",
     url: "https://duelle.vercel.app/",
     siteName: "Duelle",
     images: [
@@ -39,10 +74,15 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Duelle",
+    title: "Duelle | Multiplayer Word Game",
     description:
-      "A real-time 1v1 Wordle showdown. Challenge friends and race to solve the word first.",
+      "Challenge friends to a live word guessing duel. Think fast, solve first, win.",
     images: ["/duelle_thumbnail.png"],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
