@@ -464,139 +464,64 @@ export async function submitGuess(
   return { success: true, colors: result };
 }
 
-// Rematch function
 export async function requestRematch(gameId: string, userId: string) {
-  noStore(); // 1. Absolute guarantee Vercel won't cache this action
-
-  // 2. Fetch current game state
-  const { data: initialGame } = await supabase
+  // 1️⃣ Get current game
+  const { data: game, error: gameError } = await supabase
     .from("games")
     .select("player1_uid, player2_uid, rematch_id")
     .eq("id", gameId)
     .single();
 
-  if (!initialGame) return { error: "Game not found" };
-
-  // If the opponent just created the game a millisecond ago, join it immediately
-  if (initialGame.rematch_id) {
-    return { status: "started", newGameId: initialGame.rematch_id };
+  if (gameError || !game) {
+    return { error: "Game not found" };
   }
 
-  // Determine which player is clicking
-  const isPlayer1 = initialGame.player1_uid === userId;
+  // Already created? Just join it (important!)
+  if (game.rematch_id) {
+    return { status: "started", newGameId: game.rematch_id };
+  }
+
+  // 2️⃣ Validate the caller is actually in this game
+  if (userId !== game.player1_uid && userId !== game.player2_uid) {
+    return { error: "User is not part of this game" };
+  }
+
+  const isPlayer1 = userId === game.player1_uid;
   const myRematchCol = isPlayer1 ? "p1_rematch" : "p2_rematch";
 
-  // 3. Update Public Mirror FIRST (Ensures UI updates instantly for both players)
+  // 3️⃣ Mark THIS player ready
+  const { error: updateError } = await supabase
+    .from("games")
+    .update({ [myRematchCol]: true })
+    .eq("id", gameId);
+
+  if (updateError) {
+    return { error: "Failed to update rematch vote" };
+  }
+
+  // Update mirror (UI only)
   await supabase
     .from("active_games")
     .update({ [myRematchCol]: true })
     .eq("id", gameId);
 
-  // 4. ⚡ ATOMIC UPDATE + SELECT (The Vercel Race-Condition Fix)
-  // This updates the database and returns the absolute freshest row in one single step.
-  const { data: freshGame, error: updateError } = await supabase
-    .from("games")
-    .update({ [myRematchCol]: true })
-    .eq("id", gameId)
-    .select("*")
-    .single();
+  // 4️⃣ 🔐 Let Postgres decide if the rematch should start
+  const { data: newGameId, error: rpcError } = await supabase.rpc(
+    "start_rematch_if_ready",
+    { old_game_id: gameId },
+  );
 
-  if (updateError || !freshGame) return { error: "Failed to update rematch" };
-
-  // Double check again just in case the opponent's request finished during our update
-  if (freshGame.rematch_id) {
-    return { status: "started", newGameId: freshGame.rematch_id };
+  if (rpcError) {
+    console.error(rpcError);
+    return { error: "Failed to start rematch" };
   }
 
-  // 5. If BOTH players have now voted true, create the new game
-  if (freshGame.p1_rematch && freshGame.p2_rematch) {
-    // GET a new secret word
-    const { count, error: countError } = await supabase
-      .from("dictionary")
-      .select("*", { count: "exact", head: true })
-      .eq("is_target", true);
-
-    if (countError || !count) return { error: "Failed to get word count" };
-
-    const randomIndex = Math.floor(Math.random() * count);
-
-    const { data: secretWordData, error: wordError } = await supabase
-      .from("dictionary")
-      .select("word")
-      .eq("is_target", true)
-      .range(randomIndex, randomIndex)
-      .single();
-
-    if (wordError || !secretWordData?.word) {
-      return { error: "Failed to get secret word" };
-    }
-
-    const secret = secretWordData.word;
-
-    // Create the new game row
-    const { data: newGame, error: gameError } = await supabase
-      .from("games")
-      .insert({
-        player1_uid: freshGame.player1_uid,
-        player2_uid: freshGame.player2_uid,
-        status: "playing",
-        secret_word: secret,
-        is_private: freshGame.is_private,
-        join_code: freshGame.join_code,
-        last_move_at: new Date().toISOString(),
-        last_move_by_uid: freshGame.player1_uid,
-      })
-      .select("id")
-      .single();
-
-    if (gameError || !newGame) {
-      return { error: "Failed to create rematch game" };
-    }
-
-    // Create Public Mirror
-    const { error: activeGameError } = await supabase
-      .from("active_games")
-      .insert({
-        id: newGame.id,
-        player1_uid: freshGame.player1_uid,
-        player2_uid: freshGame.player2_uid,
-        status: "playing",
-        is_private: freshGame.is_private,
-        join_code: freshGame.join_code,
-        p1_scores: [],
-        p2_scores: [],
-        last_move_at: new Date().toISOString(),
-        last_move_by_uid: freshGame.player1_uid,
-      });
-
-    if (activeGameError) {
-      // Cleanup the orphaned private game if public mirror fails
-      await supabase.from("games").delete().eq("id", newGame.id);
-      return { error: "Failed to create active game mirror" };
-    }
-
-    // Link old game to the new game
-    const { error: updateGamesError } = await supabase
-      .from("games")
-      .update({ rematch_id: newGame.id })
-      .eq("id", gameId);
-
-    if (updateGamesError) return { error: "Failed to update games rematch_id" };
-
-    const { error: updateActiveGamesError } = await supabase
-      .from("active_games")
-      .update({ rematch_id: newGame.id })
-      .eq("id", gameId);
-
-    if (updateActiveGamesError)
-      return { error: "Failed to update active_games rematch_id" };
-
-    // You don't actually need the final verify block here because the atomic update
-    // guarantees it was written, but the UI redirect will handle the rest!
-    return { status: "started", newGameId: newGame.id };
+  // If BOTH players had already clicked → this now returns the new game
+  if (newGameId) {
+    return { status: "started", newGameId };
   }
 
-  // If we are the first person to click, just wait.
+  // Otherwise we wait for opponent
   return { status: "waiting" };
 }
 
