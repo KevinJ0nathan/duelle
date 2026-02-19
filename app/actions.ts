@@ -465,7 +465,6 @@ export async function submitGuess(
 }
 
 // Rematch function
-// Rematch function
 export async function requestRematch(gameId: string, userId: string) {
   // Fetch current game state
   const { data: initialGame } = await supabase
@@ -505,6 +504,11 @@ export async function requestRematch(gameId: string, userId: string) {
   }
 
   if (freshGame.p1_rematch && freshGame.p2_rematch) {
+    // Double-check rematch_id wasn't set by another concurrent request
+    if (freshGame.rematch_id) {
+      return { status: "started", newGameId: freshGame.rematch_id };
+    }
+
     // Create a new game
 
     // GET a new secret word
@@ -513,23 +517,27 @@ export async function requestRematch(gameId: string, userId: string) {
       .select("*", { count: "exact", head: true }) // dont return data and just count
       .eq("is_target", true);
 
-    if (countError || !count) return;
+    if (countError || !count) return { error: "Failed to get word count" };
 
     // generate random index to pick random word
     const randomIndex = Math.floor(Math.random() * count);
 
     // Fetch only the single word at the index
-    const { data: secretWordData } = await supabase
+    const { data: secretWordData, error: wordError } = await supabase
       .from("dictionary")
       .select("word")
       .eq("is_target", true)
       .range(randomIndex, randomIndex)
       .single();
 
-    const secret = secretWordData?.word;
+    if (wordError || !secretWordData?.word) {
+      return { error: "Failed to get secret word" };
+    }
+
+    const secret = secretWordData.word;
 
     // Create the new game row
-    const { data: newGame, error } = await supabase
+    const { data: newGame, error: gameError } = await supabase
       .from("games")
       .insert({
         player1_uid: freshGame.player1_uid,
@@ -544,10 +552,12 @@ export async function requestRematch(gameId: string, userId: string) {
       .select("id")
       .single();
 
-    if (error || !newGame) return { error: "Failed to create rematch" };
+    if (gameError || !newGame) {
+      return { error: "Failed to create rematch game" };
+    }
 
     // Create Public Mirror
-    await supabase.from("active_games").insert({
+    const { error: activeGameError } = await supabase.from("active_games").insert({
       id: newGame.id,
       player1_uid: freshGame.player1_uid,
       player2_uid: freshGame.player2_uid,
@@ -560,15 +570,39 @@ export async function requestRematch(gameId: string, userId: string) {
       last_move_by_uid: freshGame.player1_uid,
     });
 
-    // Link old game to the new game
-    await supabase
+    if (activeGameError) {
+      return { error: "Failed to create active game mirror" };
+    }
+
+    // Link old game to the new game - check for errors
+    const { error: updateGamesError } = await supabase
       .from("games")
       .update({ rematch_id: newGame.id })
       .eq("id", gameId);
-    await supabase
+
+    if (updateGamesError) {
+      return { error: "Failed to update games rematch_id" };
+    }
+
+    const { error: updateActiveGamesError } = await supabase
       .from("active_games")
       .update({ rematch_id: newGame.id })
       .eq("id", gameId);
+
+    if (updateActiveGamesError) {
+      return { error: "Failed to update active_games rematch_id" };
+    }
+
+    // Verify the rematch_id was set correctly
+    const { data: verifyGame } = await supabase
+      .from("games")
+      .select("rematch_id")
+      .eq("id", gameId)
+      .single();
+
+    if (!verifyGame || verifyGame.rematch_id !== newGame.id) {
+      return { error: "Failed to verify rematch_id was set" };
+    }
 
     return { status: "started", newGameId: newGame.id };
   }
