@@ -42,7 +42,7 @@ function Row({
         return (
           <div
             key={i}
-            className={`aspect-square w-full h-7 md:h-16 border-2 flex items-center justify-center text-2xl md:text-3xl font-bold uppercase transition-all duration-300 ${style}`}
+            className={`aspect-square w-full border-2 flex items-center justify-center text-2xl md:text-3xl font-bold uppercase transition-all duration-300 ${style}`}
           >
             {letter}
           </div>
@@ -74,7 +74,10 @@ export default function WordleInput({
     safeToShow.current = true;
   }
   return (
-    <div className="grid grid-rows-6 gap-2 mb-4">
+    <div
+      className="grid grid-rows-6 gap-2 mb-4 max-w-sm mx-auto w-full"
+      style={{ maxWidth: "min(100%, 350px, 35vh)" }}
+    >
       {[...Array(6)].map((_, i) => {
         const isCurrentRow = i === turn;
         let content = "";

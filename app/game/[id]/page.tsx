@@ -23,8 +23,12 @@ export default function GamePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // game id
   const { id } = use(params);
+  return <GameContent key={id} id={id} />;
+}
+
+function GameContent({ id }: { id: string }) {
+  // game id
   const router = useRouter();
   const supabase = createClientComponentClient();
   // Prevent double code runs when error is found
@@ -168,7 +172,7 @@ export default function GamePage({
       const amIPlayer1 = game.player1_uid === currentUserId;
       const rawScores = amIPlayer1 ? game.p2_scores : game.p1_scores;
       if (rawScores && Array.isArray(rawScores)) {
-        setOpponentGuesses(rawScores.map(() => "?????"));
+        setOpponentGuesses(rawScores.map(() => ""));
         setOpponentHistory(rawScores.map((s: string) => s.split("")));
       }
 
@@ -191,7 +195,7 @@ export default function GamePage({
       setLoading(false);
     };
     initializeGame();
-  }, [id]);
+  }, [id, wordle.resumeGame]);
 
   // Useeffect for realtime updates
   useEffect(() => {
@@ -232,7 +236,7 @@ export default function GamePage({
           const isPlayer1 = userId === newGame.player1_uid;
           const rawScores = isPlayer1 ? newGame.p2_scores : newGame.p1_scores;
           if (rawScores) {
-            setOpponentGuesses(rawScores.map(() => "?????"));
+            setOpponentGuesses(rawScores.map(() => ""));
             setOpponentHistory(rawScores.map((s: string) => s.split("")));
           }
           if (newGame.status === "finished") {
@@ -391,7 +395,7 @@ export default function GamePage({
             isShaking={isShaking}
           />
         </div>
-        <div className="flex flex-1 flex-col items-center opacity-80">
+        <div className="flex flex-1 flex-col items-center opacity-80 fixed top-1 right-10 md:static md:top-auto md:right-auto">
           <span className="text-xs font-bold text-red-500 tracking-widest mb-4">
             OPPONENT
           </span>
