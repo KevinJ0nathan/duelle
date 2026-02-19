@@ -98,7 +98,7 @@ function GameContent({ id }: { id: string }) {
     setTimeout(() => setToastMessage(null), 2000); // remove toast message after 2s
   }, []);
 
-  const wordle = useWordle(id, userId || "", showInvalidError);
+  const wordle = useWordle(id, userId!, showInvalidError);
 
   useEffect(() => {
     instanceRef.current += 1;
@@ -230,11 +230,6 @@ function GameContent({ id }: { id: string }) {
         },
         (payload) => {
           if (instance !== instanceRef.current) return;
-          const newRematchId = payload.new.rematch_id;
-
-          if (newRematchId) {
-            router.push(`/game/${newRematchId}`);
-          }
           const newGame = payload.new as any;
 
           // // Check if game status is changing from waiting to playing
@@ -317,25 +312,52 @@ function GameContent({ id }: { id: string }) {
     return () => clearInterval(interval);
   }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
 
-  // Rematch checker
-  useEffect(() => {
-    // Only run if game is finished
-    if (gameStatus !== "finished") return;
+  // // Rematch checker
+  // useEffect(() => {
+  //   // Only run if game is finished
+  //   if (gameStatus !== "finished") return;
 
-    const interval = setInterval(async () => {
-      // Check if there is rematch id
-      const { data } = await supabase
-        .from("active_games")
-        .select("rematch_id")
-        .eq("id", id)
-        .single();
-      // if it exist then redirect user to rematch
-      if (data?.rematch_id) {
-        router.push(`/game/${data.rematch_id}`);
-      }
-    }, 3000); // check every 3 seconds
-    return () => clearInterval(interval);
-  }, [id, gameStatus, router]);
+  //   const interval = setInterval(async () => {
+  //     // Check if there is rematch id
+  //     const { data } = await supabase
+  //       .from("active_games")
+  //       .select("rematch_id")
+  //       .eq("id", id)
+  //       .single();
+  //     // if it exist then redirect user to rematch
+  //     if (data?.rematch_id) {
+  //       router.push(`/game/${data.rematch_id}`);
+  //     }
+  //   }, 3000); // check every 3 seconds
+  //   return () => clearInterval(interval);
+  // }, [id, gameStatus, router]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rematch-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "games",
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          const newRematchId = payload.new.rematch_id;
+
+          if (newRematchId) {
+            // 🔥 Opponent created the rematch → go there instantly
+            router.push(`/game/${newRematchId}`);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
 
   if (fatalError) {
     return (
