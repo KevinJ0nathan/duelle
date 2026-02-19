@@ -465,63 +465,20 @@ export async function submitGuess(
 }
 
 export async function requestRematch(gameId: string, userId: string) {
-  // 1️⃣ Get current game
-  const { data: game, error: gameError } = await supabase
-    .from("games")
-    .select("player1_uid, player2_uid, rematch_id")
-    .eq("id", gameId)
-    .single();
+  const { data, error } = await supabase.rpc("request_rematch", {
+    p_game_id: gameId,
+    p_user_id: userId,
+  });
 
-  if (gameError || !game) {
-    return { error: "Game not found" };
+  if (error) {
+    console.error(error);
+    return { error: "Failed to request rematch" };
   }
 
-  // Already created? Just join it (important!)
-  if (game.rematch_id) {
-    return { status: "started", newGameId: game.rematch_id };
+  if (data) {
+    return { status: "started", newGameId: data };
   }
 
-  // 2️⃣ Validate the caller is actually in this game
-  if (userId !== game.player1_uid && userId !== game.player2_uid) {
-    return { error: "User is not part of this game" };
-  }
-
-  const isPlayer1 = userId === game.player1_uid;
-  const myRematchCol = isPlayer1 ? "p1_rematch" : "p2_rematch";
-
-  // 3️⃣ Mark THIS player ready
-  const { error: updateError } = await supabase
-    .from("games")
-    .update({ [myRematchCol]: true })
-    .eq("id", gameId);
-
-  if (updateError) {
-    return { error: "Failed to update rematch vote" };
-  }
-
-  // Update mirror (UI only)
-  await supabase
-    .from("active_games")
-    .update({ [myRematchCol]: true })
-    .eq("id", gameId);
-
-  // 4️⃣ 🔐 Let Postgres decide if the rematch should start
-  const { data: newGameId, error: rpcError } = await supabase.rpc(
-    "start_rematch_if_ready",
-    { old_game_id: gameId },
-  );
-
-  if (rpcError) {
-    console.error(rpcError);
-    return { error: "Failed to start rematch" };
-  }
-
-  // If BOTH players had already clicked → this now returns the new game
-  if (newGameId) {
-    return { status: "started", newGameId };
-  }
-
-  // Otherwise we wait for opponent
   return { status: "waiting" };
 }
 

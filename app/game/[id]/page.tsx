@@ -216,7 +216,6 @@ function GameContent({ id }: { id: string }) {
 
   // Useeffect for realtime updates
   useEffect(() => {
-    const instance = instanceRef.current;
     if (!userId || loading) return;
     const channel = supabase
       .channel(`game_updates_${id}`)
@@ -229,7 +228,6 @@ function GameContent({ id }: { id: string }) {
           filter: `id=eq.${id}`,
         },
         (payload) => {
-          if (instance !== instanceRef.current) return;
           const newGame = payload.new as any;
 
           // // Check if game status is changing from waiting to playing
@@ -340,14 +338,13 @@ function GameContent({ id }: { id: string }) {
         {
           event: "UPDATE",
           schema: "public",
-          table: "games",
+          table: "active_games",
           filter: `id=eq.${id}`,
         },
         (payload) => {
           const newRematchId = payload.new.rematch_id;
 
           if (newRematchId) {
-            // 🔥 Opponent created the rematch → go there instantly
             router.push(`/game/${newRematchId}`);
           }
         },
