@@ -195,13 +195,13 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, wordle.resumeGame]);
+  }, [id, wordle.resumeGame, userId]);
 
   // Useeffect for realtime updates
   useEffect(() => {
     if (!userId || loading) return;
     const channel = supabase
-      .channel("game_updates")
+      .channel(`game_updates_${id}`)
       .on(
         "postgres_changes",
         {
