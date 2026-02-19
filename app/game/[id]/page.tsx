@@ -31,6 +31,7 @@ function GameContent({ id }: { id: string }) {
   // game id
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const instanceRef = useRef(0);
   // Prevent double code runs when error is found
   const hasRedirected = useRef(false);
   // user state
@@ -99,8 +100,24 @@ function GameContent({ id }: { id: string }) {
 
   const wordle = useWordle(id, userId || "", showInvalidError);
 
+  useEffect(() => {
+    instanceRef.current += 1;
+  }, [id]);
+
+  useEffect(() => {
+    setWinner(null);
+    setSecretWord(null);
+    setGameStatus("playing");
+    setOpponentGuesses([]);
+    setOpponentHistory([]);
+    setRematchRequested(false);
+    setOpponentRematchRequested(false);
+    setHasClaimed(false);
+  }, [id]);
+
   // Initialize & Authentication
   useEffect(() => {
+    const instance = instanceRef.current;
     const initializeGame = async () => {
       // login check
       let currentUserId = userId;
@@ -134,7 +151,7 @@ function GameContent({ id }: { id: string }) {
         setTimeout(() => router.push("/"), 2000);
         return;
       }
-
+      if (instance !== instanceRef.current) return;
       // capture join code if it exists
       if (game.join_code) setJoinCode(game.join_code);
       setGameStatus(game.status); // waiting or playing
@@ -199,6 +216,7 @@ function GameContent({ id }: { id: string }) {
 
   // Useeffect for realtime updates
   useEffect(() => {
+    const instance = instanceRef.current;
     if (!userId || loading) return;
     const channel = supabase
       .channel(`game_updates_${id}`)
@@ -211,6 +229,7 @@ function GameContent({ id }: { id: string }) {
           filter: `id=eq.${id}`,
         },
         (payload) => {
+          if (instance !== instanceRef.current) return;
           const newGame = payload.new as any;
 
           // // Check if game status is changing from waiting to playing
@@ -242,7 +261,10 @@ function GameContent({ id }: { id: string }) {
           if (newGame.status === "finished") {
             setWinner(newGame.winner_uid);
 
+            const instance = instanceRef.current;
+
             getSecretWord(id).then((res) => {
+              if (instance !== instanceRef.current) return;
               if (res.secret) setSecretWord(res.secret.toUpperCase());
             });
           }
