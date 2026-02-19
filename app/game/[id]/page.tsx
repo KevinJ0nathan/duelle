@@ -230,6 +230,11 @@ function GameContent({ id }: { id: string }) {
         },
         (payload) => {
           if (instance !== instanceRef.current) return;
+          const newRematchId = payload.new.rematch_id;
+
+          if (newRematchId) {
+            router.push(`/game/${newRematchId}`);
+          }
           const newGame = payload.new as any;
 
           // // Check if game status is changing from waiting to playing
