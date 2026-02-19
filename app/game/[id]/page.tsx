@@ -217,7 +217,10 @@ function GameContent({ id }: { id: string }) {
   // Useeffect for realtime updates
   useEffect(() => {
     const instance = instanceRef.current;
-    if (!userId || loading) return;
+    if (!userId || loading) {
+      console.log("Skip realtime, userId:", userId, "loading:", loading);
+      return
+    } console.log("Subscribing to channel", `game_updates_${id}`);
     const channel = supabase
       .channel(`game_updates_${id}`)
       .on(
@@ -248,7 +251,7 @@ function GameContent({ id }: { id: string }) {
           setGameStatus(newGame.status);
 
           if (newGame.last_move_at) setLastMoveAt(newGame.last_move_at);
-          if (newGame.last_move_by_id) setLastMoveBy(newGame.last_move_by_id);
+          if (newGame.last_move_by_uid) setLastMoveBy(newGame.last_move_by_uid);
 
           setHasClaimed(false);
 
@@ -281,6 +284,38 @@ function GameContent({ id }: { id: string }) {
         },
       )
       .subscribe();
+
+      supabase
+      .from("active_games")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!data || error) return;
+        if (instance !== instanceRef.current) return;
+  
+        setGameStatus(data.status);
+        if (data.last_move_at) setLastMoveAt(data.last_move_at);
+        if (data.last_move_by_uid) setLastMoveBy(data.last_move_by_uid);
+  
+        const isPlayer1 = userId === data.player1_uid;
+        const rawScores = isPlayer1 ? data.p2_scores : data.p1_scores;
+        if (rawScores && Array.isArray(rawScores)) {
+          setOpponentGuesses(rawScores.map(() => ""));
+          setOpponentHistory(rawScores.map((s: string) => s.split("")));
+        }
+        if (data.status === "finished") {
+          setWinner(data.winner_uid);
+          getSecretWord(id).then((res) => {
+            if (res.secret) setSecretWord(res.secret.toUpperCase());
+          });
+        }
+  
+        const opponentRematch = isPlayer1
+          ? data.p2_rematch
+          : data.p1_rematch;
+        setOpponentRematchRequested(opponentRematch);
+      });
     return () => {
       supabase.removeChannel(channel);
     };
