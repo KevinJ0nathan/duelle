@@ -6,6 +6,13 @@ export function useWordle(
   userId: string,
   onError?: (msg: string) => void,
 ) {
+  function resetGame() {
+    setGuesses([]);
+    setHistory([]);
+    setCurrentGuess("");
+    setUsedKeys({});
+  }
+
   const [currentGuess, setCurrentGuess] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
   const [history, setHistory] = useState<string[][]>([]); // history of colors
@@ -150,5 +157,6 @@ export function useWordle(
     handleKey,
     isProcessing,
     resumeGame,
+    resetGame,
   };
 }

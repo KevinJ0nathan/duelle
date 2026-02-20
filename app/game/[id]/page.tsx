@@ -105,6 +105,7 @@ function GameContent({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
+    wordle.resetGame();
     setWinner(null);
     setSecretWord(null);
     setGameStatus("playing");
@@ -117,7 +118,8 @@ function GameContent({ id }: { id: string }) {
 
   // Initialize & Authentication
   useEffect(() => {
-    const instance = instanceRef.current;
+    wordle.resetGame();
+    const instance = ++instanceRef.current;
     const initializeGame = async () => {
       // login check
       let currentUserId = userId;
@@ -199,7 +201,7 @@ function GameContent({ id }: { id: string }) {
         "get_my_restored_state",
         { game_uuid: id },
       );
-
+      if (instance !== instanceRef.current) return;
       // if we have saved moves in db but our local board is empty then we should restore the db
       if (
         restoredGuesses &&
@@ -212,7 +214,7 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, wordle.resumeGame, userId]);
+  }, [id, wordle.resumeGame, wordle.resetGame(), userId]);
 
   // Useeffect for realtime updates
   useEffect(() => {
