@@ -24,14 +24,14 @@ export default function GamePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  return <GameContent key={id} id={id} />;
+  return <GameContent key={`game-${id}`} id={id} />;
 }
 
 function GameContent({ id }: { id: string }) {
   // game id
   const router = useRouter();
   const supabase = createClientComponentClient();
-  const instanceRef = useRef(0);
+  const gameInstanceId = useRef(crypto.randomUUID());
   // Prevent double code runs when error is found
   const hasRedirected = useRef(false);
   // user state
@@ -100,8 +100,9 @@ function GameContent({ id }: { id: string }) {
 
   const wordle = useWordle(id, userId || "", showInvalidError);
 
+  // reset game instance whenever gameid changes
   useEffect(() => {
-    instanceRef.current += 1;
+    gameInstanceId.current = crypto.randomUUID();
   }, [id]);
 
   useEffect(() => {
@@ -120,7 +121,6 @@ function GameContent({ id }: { id: string }) {
 
   // Initialize & Authentication
   useEffect(() => {
-    const instance = ++instanceRef.current;
     const initializeGame = async () => {
       // login check
       let currentUserId = userId;
@@ -154,7 +154,6 @@ function GameContent({ id }: { id: string }) {
         setTimeout(() => router.push("/"), 2000);
         return;
       }
-      if (instance !== instanceRef.current) return;
       // capture join code if it exists
       if (game.join_code) setJoinCode(game.join_code);
       setGameStatus(game.status); // waiting or playing
@@ -195,14 +194,14 @@ function GameContent({ id }: { id: string }) {
         setOpponentGuesses(rawScores.map(() => ""));
         setOpponentHistory(rawScores.map((s: string) => s.split("")));
       }
-
+      const instance = gameInstanceId.current;
       // Restore the current user game data (if the user reloads the page)
       // Use rpc to call the current player guesses
       const { data: restoredGuesses, error: rpcError } = await supabase.rpc(
         "get_my_restored_state",
         { game_uuid: id },
       );
-      if (instance !== instanceRef.current) return;
+      if (instance !== gameInstanceId.current) return; // ← cancel stale result
       // if we have saved moves in db but our local board is empty then we should restore the db
       if (
         restoredGuesses &&
@@ -220,6 +219,8 @@ function GameContent({ id }: { id: string }) {
   // Useeffect for realtime updates
   useEffect(() => {
     if (!userId || loading) return;
+    const instanceAtSubscribe = gameInstanceId.current;
+
     const channel = supabase
       .channel(`game_updates_${id}`)
       .on(
@@ -231,6 +232,7 @@ function GameContent({ id }: { id: string }) {
           filter: `id=eq.${id}`,
         },
         (payload) => {
+          if (gameInstanceId.current !== instanceAtSubscribe) return;
           const newGame = payload.new as any;
 
           if (newGame.id !== id) return;
@@ -263,11 +265,9 @@ function GameContent({ id }: { id: string }) {
           }
           if (newGame.status === "finished") {
             setWinner(newGame.winner_uid);
-
-            const instance = instanceRef.current;
-
+            const instance = gameInstanceId.current;
             getSecretWord(id).then((res) => {
-              if (instance !== instanceRef.current) return;
+              if (instance !== gameInstanceId.current) return;
               if (res.secret) setSecretWord(res.secret.toUpperCase());
             });
           }
