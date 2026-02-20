@@ -337,7 +337,11 @@ export async function submitGuess(
     .from("games")
     .select()
     .eq("id", gameId)
-    .maybeSingle();
+    .single();
+
+  if (!game || game.status === "finished") {
+    return { error: "This game has already ended." };
+  }
 
   if (!game || game.status !== "playing") {
     // 'playing' matches your DB default

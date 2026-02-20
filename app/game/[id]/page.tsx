@@ -67,7 +67,7 @@ function GameContent({ id }: { id: string }) {
     const result = await requestRematch(id, userId!);
 
     if (result && result.newGameId) {
-      router.push(`/game/${result.newGameId}`);
+      router.replace(`/game/${result.newGameId}`);
     }
     // Timeout safety so user wont be stuck in rematch screen
     setTimeout(() => {
@@ -105,6 +105,7 @@ function GameContent({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
+    hasRedirected.current = false;
     wordle.resetGame();
     setWinner(null);
     setSecretWord(null);
@@ -114,6 +115,7 @@ function GameContent({ id }: { id: string }) {
     setRematchRequested(false);
     setOpponentRematchRequested(false);
     setHasClaimed(false);
+    setLoading(true);
   }, [id]);
 
   // Initialize & Authentication
@@ -231,6 +233,8 @@ function GameContent({ id }: { id: string }) {
         (payload) => {
           const newGame = payload.new as any;
 
+          if (newGame.id !== id) return;
+
           // // Check if game status is changing from waiting to playing
           // if (gameStatus === "waiting" && newGame.status === "playing") {
           //   // Play sound
@@ -275,7 +279,7 @@ function GameContent({ id }: { id: string }) {
           setOpponentRematchRequested(opponentRematch);
           // Auto redirect to new game if rematch exist
           if (newGame.rematch_id) {
-            router.push(`/game/${newGame.rematch_id}`);
+            router.replace(`/game/${newGame.rematch_id}`);
           }
         },
       )
@@ -346,7 +350,7 @@ function GameContent({ id }: { id: string }) {
           const newRematchId = payload.new.rematch_id;
 
           if (newRematchId) {
-            router.push(`/game/${newRematchId}`);
+            router.replace(`/game/${newRematchId}`);
           }
         },
       )
