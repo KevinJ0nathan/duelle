@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { submitGuess } from "@/app/actions";
 
 export function useWordle(
@@ -6,6 +6,18 @@ export function useWordle(
   userId: string,
   onError?: (msg: string) => void,
 ) {
+  const gameSessionRef = useRef<string>("");
+
+  useEffect(() => {
+    gameSessionRef.current = crypto.randomUUID();
+
+    setGuesses([]);
+    setHistory([]);
+    setUsedKeys({});
+    setCurrentGuess("");
+    setUsedKeys({});
+  }, [gameId]);
+
   const resetGame = useCallback(() => {
     setGuesses([]);
     setHistory([]);
@@ -21,6 +33,8 @@ export function useWordle(
   // Keyboard state for coloring keys that were used in guessing
   const [usedKeys, setUsedKeys] = useState<Record<string, string>>({});
 
+  const mySession = gameSessionRef.current;
+
   // Function that handles all input from both keyboard and screen
   const handleKey = useCallback(
     async (key: string) => {
@@ -34,6 +48,7 @@ export function useWordle(
 
         setIsProcessing(true);
         // Call the server action
+        if (mySession !== gameSessionRef.current) return;
         const result = await submitGuess(gameId, currentGuess, userId);
         // Handle error
         if (result.error) {

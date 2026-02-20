@@ -237,6 +237,11 @@ function GameContent({ id }: { id: string }) {
 
           if (newGame.id !== id) return;
 
+          if (newGame.rematch_id && newGame.id === id) {
+            router.replace(`/game/${newGame.rematch_id}`);
+            return;
+          }
+
           // // Check if game status is changing from waiting to playing
           // if (gameStatus === "waiting" && newGame.status === "playing") {
           //   // Play sound
@@ -334,32 +339,6 @@ function GameContent({ id }: { id: string }) {
   //   }, 3000); // check every 3 seconds
   //   return () => clearInterval(interval);
   // }, [id, gameStatus, router]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel(`rematch-${id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "active_games",
-          filter: `id=eq.${id}`,
-        },
-        (payload) => {
-          const newRematchId = payload.new.rematch_id;
-
-          if (newRematchId) {
-            router.replace(`/game/${newRematchId}`);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id]);
 
   if (fatalError) {
     return (
