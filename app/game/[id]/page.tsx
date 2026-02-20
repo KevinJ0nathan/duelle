@@ -214,7 +214,7 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, wordle.resumeGame, wordle.resetGame(), userId]);
+  }, [id, wordle.resumeGame, wordle.resetGame, userId]);
 
   // Useeffect for realtime updates
   useEffect(() => {
