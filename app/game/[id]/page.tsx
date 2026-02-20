@@ -98,7 +98,7 @@ function GameContent({ id }: { id: string }) {
     setTimeout(() => setToastMessage(null), 2000); // remove toast message after 2s
   }, []);
 
-  const wordle = useWordle(id, userId!, showInvalidError);
+  const wordle = useWordle(id, userId || "", showInvalidError);
 
   useEffect(() => {
     instanceRef.current += 1;
@@ -114,11 +114,10 @@ function GameContent({ id }: { id: string }) {
     setRematchRequested(false);
     setOpponentRematchRequested(false);
     setHasClaimed(false);
-  }, [id]);
+  }, [id, wordle.resetGame]);
 
   // Initialize & Authentication
   useEffect(() => {
-    wordle.resetGame();
     const instance = ++instanceRef.current;
     const initializeGame = async () => {
       // login check
@@ -214,7 +213,7 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, wordle.resumeGame, wordle.resetGame, userId]);
+  }, [id, wordle.resumeGame, userId]);
 
   // Useeffect for realtime updates
   useEffect(() => {
