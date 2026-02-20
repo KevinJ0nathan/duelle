@@ -106,6 +106,7 @@ function GameContent({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
+    if (!userId) return;
     hasRedirected.current = false;
     wordle.resetGame();
     setWinner(null);
@@ -116,7 +117,8 @@ function GameContent({ id }: { id: string }) {
     setRematchRequested(false);
     setOpponentRematchRequested(false);
     setHasClaimed(false);
-  }, [id]);
+    setLoading(true);
+  }, [id, userId]);
 
   // Initialize & Authentication
   useEffect(() => {
