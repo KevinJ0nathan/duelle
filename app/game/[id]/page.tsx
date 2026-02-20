@@ -219,7 +219,6 @@ function GameContent({ id }: { id: string }) {
   // Useeffect for realtime updates
   useEffect(() => {
     if (!userId || loading) return;
-    const instanceAtSubscribe = gameInstanceId.current;
 
     const channel = supabase
       .channel(`game_updates_${id}`)
@@ -232,7 +231,6 @@ function GameContent({ id }: { id: string }) {
           filter: `id=eq.${id}`,
         },
         (payload) => {
-          if (gameInstanceId.current !== instanceAtSubscribe) return;
           const newGame = payload.new as any;
 
           if (newGame.id !== id) return;
