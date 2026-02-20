@@ -116,7 +116,6 @@ function GameContent({ id }: { id: string }) {
     setRematchRequested(false);
     setOpponentRematchRequested(false);
     setHasClaimed(false);
-    setLoading(true);
   }, [id]);
 
   // Initialize & Authentication
