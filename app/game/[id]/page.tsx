@@ -114,7 +114,7 @@ function GameContent({ id }: { id: string }) {
     setRematchRequested(false);
     setOpponentRematchRequested(false);
     setHasClaimed(false);
-  }, [id, wordle.resetGame]);
+  }, [id]);
 
   // Initialize & Authentication
   useEffect(() => {
@@ -213,7 +213,7 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, wordle.resumeGame, userId]);
+  }, [id, userId]);
 
   // Useeffect for realtime updates
   useEffect(() => {

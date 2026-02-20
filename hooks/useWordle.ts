@@ -6,12 +6,12 @@ export function useWordle(
   userId: string,
   onError?: (msg: string) => void,
 ) {
-  function resetGame() {
+  const resetGame = useCallback(() => {
     setGuesses([]);
     setHistory([]);
     setCurrentGuess("");
     setUsedKeys({});
-  }
+  }, []);
 
   const [currentGuess, setCurrentGuess] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
