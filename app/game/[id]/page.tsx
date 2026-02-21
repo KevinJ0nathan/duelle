@@ -164,6 +164,8 @@ function GameContent({ id }: { id: string }) {
           router.push("/");
           return;
         }
+
+        setGameStatus("playing");
       } else {
         if (hasRedirected.current) return;
         hasRedirected.current = true;
