@@ -105,21 +105,6 @@ function GameContent({ id }: { id: string }) {
     gameInstanceId.current = crypto.randomUUID();
   }, [id]);
 
-  useEffect(() => {
-    if (!userId) return;
-    hasRedirected.current = false;
-    wordle.resetGame();
-    setWinner(null);
-    setSecretWord(null);
-    setGameStatus("playing");
-    setOpponentGuesses([]);
-    setOpponentHistory([]);
-    setRematchRequested(false);
-    setOpponentRematchRequested(false);
-    setHasClaimed(false);
-    setLoading(true);
-  }, [id, userId]);
-
   // Initialize & Authentication
   useEffect(() => {
     const initializeGame = async () => {
@@ -215,7 +200,7 @@ function GameContent({ id }: { id: string }) {
       setLoading(false);
     };
     initializeGame();
-  }, [id, userId]);
+  }, [id]);
 
   // Useeffect for realtime updates
   useEffect(() => {
