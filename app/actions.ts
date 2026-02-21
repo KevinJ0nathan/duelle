@@ -23,18 +23,23 @@ const generateCode = () =>
 
 // function to check if user is in an existing game
 async function findActiveGame(userId: string) {
+  // Calculate the time exactly 2 minutes ago
+  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   // check if user is in a game that is unfinished
   const { data: activeGame } = await supabase
     .from("games")
     .select("id")
     .or(`player1_uid.eq.${userId},player2_uid.eq.${userId}`)
     .neq("status", "finished") // only check open games
+    .gte("last_move_at", twoMinutesAgo) // only includee games that are active in the last 2 minutes
     .maybeSingle();
 
   return activeGame;
 }
 
 export async function joinQueue(userId: string) {
+  // Calculate the time exactly 2 minutes ago
+  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   // Check if they are already in a game
   const existingGame = await findActiveGame(userId);
   if (existingGame) {
@@ -47,6 +52,7 @@ export async function joinQueue(userId: string) {
     .eq("status", "waiting")
     .eq("is_private", false) // dont join private lobbies
     .neq("player1_uid", userId) // dont join urself
+    .gte("last_move_at", twoMinutesAgo) // only includee games that are active in the last 2 minutes
     .limit(1)
     .maybeSingle();
   // if a game is in a queue
