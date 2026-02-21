@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Generate waiting card
   if (game.status === "waiting") {
     return {
-      title: "⚔️ Challenge me to Duelle!",
+      title: "Duelle",
       description: "Jump into the match and let’s see who comes out on top.",
       openGraph: {
         title: "⚔️ Challenge me to Duelle!",
