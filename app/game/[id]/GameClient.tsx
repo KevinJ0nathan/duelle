@@ -51,6 +51,8 @@ export default function GameClient({ id }: { id: string }) {
   const [isShaking, setIsShaking] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const rematchTimeoutRef = useRef<any>(null);
+
   const handleRematchClick = async () => {
     setRematchStatus("waiting");
     setRematchRequested(true);
@@ -61,7 +63,7 @@ export default function GameClient({ id }: { id: string }) {
       router.replace(`/game/${result.newGameId}`);
     }
     // Timeout safety so user wont be stuck in rematch screen
-    setTimeout(() => {
+    rematchTimeoutRef.current = setTimeout(() => {
       setRematchStatus((currentStatus) => {
         if (currentStatus === "waiting") {
           cancelRematch(id, userId!);
@@ -73,6 +75,13 @@ export default function GameClient({ id }: { id: string }) {
       });
     }, 60000); // wait for 1 minute
   };
+
+  // This guarantees the timer is destroyed the moment you leave the game!
+  useEffect(() => {
+    return () => {
+      if (rematchTimeoutRef.current) clearTimeout(rematchTimeoutRef.current);
+    };
+  }, []);
 
   const handleExitQueue = async () => {
     // delete game from db
@@ -89,7 +98,7 @@ export default function GameClient({ id }: { id: string }) {
     setTimeout(() => setToastMessage(null), 2000); // remove toast message after 2s
   }, []);
 
-  const wordle = useWordle(id, userId || "", showInvalidError);
+  const wordle = useWordle(id, userId || "", gameStatus, showInvalidError);
 
   // reset game instance whenever gameid changes
   useEffect(() => {
@@ -219,18 +228,6 @@ export default function GameClient({ id }: { id: string }) {
             return;
           }
 
-          // // Check if game status is changing from waiting to playing
-          // if (gameStatus === "waiting" && newGame.status === "playing") {
-          //   // Play sound
-          //   try {
-          //     const audio = new Audio("/match.mp3");
-          //     audio.volume = 0.5;
-          //     audio.play().catch((e) => console.log("Audio Blocked:", e));
-          //   } catch (err) {
-          //     console.error("Sound error", err);
-          //   }
-          // }
-
           // update status e.g from waiting to playing
           setGameStatus(newGame.status);
 
@@ -296,6 +293,30 @@ export default function GameClient({ id }: { id: string }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
+
+  const prevStatus = useRef(gameStatus);
+  useEffect(() => {
+    // check if status just change from waiting to playing
+    if (prevStatus.current === "waiting" && gameStatus === "playing") {
+      // Play the soundd
+      try {
+        const audio = new Audio("/match.mp3");
+        audio.volume = 1;
+        audio.play().catch((e) => console.log("Audio Blocked by browser:", e));
+      } catch (err) {
+        console.error("Sound error", err);
+      }
+
+      // Vibrate phonee
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]); // vibrate, pause, vibrate
+      }
+
+      setToastMessage("⚔️ MATCH FOUND! GO!");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+    prevStatus.current = gameStatus;
+  }, [gameStatus]);
 
   // // Rematch checker
   // useEffect(() => {

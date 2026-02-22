@@ -4,6 +4,7 @@ import { submitGuess } from "@/app/actions";
 export function useWordle(
   gameId: string,
   userId: string,
+  gameStatus: string,
   onError?: (msg: string) => void,
 ) {
   const gameSessionRef = useRef<string>("");
@@ -15,7 +16,6 @@ export function useWordle(
     setHistory([]);
     setUsedKeys({});
     setCurrentGuess("");
-    setUsedKeys({});
   }, [gameId]);
 
   const resetGame = useCallback(() => {
@@ -38,7 +38,8 @@ export function useWordle(
   // Function that handles all input from both keyboard and screen
   const handleKey = useCallback(
     async (key: string) => {
-      if (isProcessing) return;
+      // block all typing if game is proceessing or finished
+      if (isProcessing || gameStatus === "finished") return;
 
       if (key === "ENTER") {
         if (currentGuess.length !== 5) {
@@ -102,7 +103,7 @@ export function useWordle(
         setCurrentGuess((prev) => prev + key);
       }
     },
-    [isProcessing, currentGuess, gameId, userId, submitGuess],
+    [isProcessing, currentGuess, gameId, userId, gameStatus, submitGuess],
   );
   // Listen for actual keyboard inputs
   useEffect(() => {
