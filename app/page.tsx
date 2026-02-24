@@ -4,12 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClientComponentClient } from "@/lib/supabase";
 import { joinQueue, joinPrivate, createPrivateGame } from "./actions";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 
 export default function Home() {
   const router = useRouter();
   const supabase = createClientComponentClient();
   const [isPending, startTransition] = useTransition();
   const [code, setCode] = useState("");
+  const onlineCount = useOnlineCount();
 
   type TileStatus = "green" | "gold" | "gray" | "empty";
 
@@ -112,31 +114,15 @@ export default function Home() {
             Duelle
           </span>
         </div>
-        {false && (
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              {/* Clickable Profile Button */}
-              <button
-                onClick={() => console.log("Profile clicked!")}
-                className="w-10 h-10 bg-[#C7DBC6] rounded-full flex items-center justify-center text-[#2D4030] transition-transform hover:scale-105 active:scale-95 cursor-pointer border-none outline-none"
-                aria-label="User Profile"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-[#2D4030]/10">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+          <span className="text-sm font-bold text-[#2D4030] font-mono">
+            {onlineCount} Online
+          </span>
+        </div>
       </header>
 
       {/* Main content container */}
