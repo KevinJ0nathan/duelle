@@ -471,8 +471,6 @@ export async function submitGuess(
 
   if (publicUpdateError) return { error: publicUpdateError.message };
 
-  revalidatePath(`/game/${gameId}`);
-
   return { success: true, colors: result };
 }
 

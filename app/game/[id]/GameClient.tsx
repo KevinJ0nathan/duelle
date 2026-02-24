@@ -47,11 +47,6 @@ export default function GameClient({ id }: { id: string }) {
     "idle" | "waiting" | "timeout"
   >("idle");
 
-  // For inactivity win
-  const TIMEOUT_DURATION = 120;
-  const [timeUntilTimeout, setTimeUntilTimeout] = useState(TIMEOUT_DURATION);
-  const amISafe = lastMoveBy === userId;
-
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -148,9 +143,9 @@ export default function GameClient({ id }: { id: string }) {
       // capture join code if it exists
       if (game.join_code) setJoinCode(game.join_code);
       setGameStatus(game.status); // waiting or playing
-      setWinner(game.winner_uid);
-      setLastMoveAt(game.last_move_at);
-      setLastMoveBy(game.last_move_by_uid);
+      if (game.winner_uid) setWinner(game.winner_uid);
+      if (game.last_move_at) setLastMoveAt(game.last_move_at);
+      if (game.last_move_by_uid) setLastMoveBy(game.last_move_by_uid);
       // prevent more than 2 client to access the game page
       const isPlayer1 = game.player1_uid == currentUserId;
       const isPlayer2 = game.player2_uid == currentUserId;
@@ -228,10 +223,6 @@ export default function GameClient({ id }: { id: string }) {
 
           if (newGame.id !== id) return;
 
-          if (newGame.last_move_at) {
-            setLastMoveAt(newGame.last_move_at);
-          }
-
           if (newGame.rematch_id && newGame.id === id) {
             router.replace(`/game/${newGame.rematch_id}`);
             return;
@@ -241,7 +232,7 @@ export default function GameClient({ id }: { id: string }) {
           setGameStatus(newGame.status);
 
           if (newGame.last_move_at) setLastMoveAt(newGame.last_move_at);
-          if (newGame.last_move_by_uid) setLastMoveBy(newGame.last_move_by_uid);
+          if (newGame.last_move_by_id) setLastMoveBy(newGame.last_move_by_id);
 
           setHasClaimed(false);
 
@@ -278,66 +269,30 @@ export default function GameClient({ id }: { id: string }) {
   }, [id, userId, loading]);
 
   // Auto win checker if the opponent is inactive
-  // useEffect(() => {
-  //   if (gameStatus !== "playing" || !lastMoveAt || !lastMoveBy || hasClaimed)
-  //     return;
-
-  //   const interval = setInterval(async () => {
-  //     const now = new Date().getTime();
-  //     const last = new Date(lastMoveAt).getTime();
-  //     const secondsPassed = (now - last) / 1000;
-
-  //     const TIMEOUT_LIMIT = 120; // 2 minutes
-
-  //     if (secondsPassed >= TIMEOUT_LIMIT && lastMoveBy === userId) {
-  //       setHasClaimed(true);
-  //       clearInterval(interval);
-
-  //       const result = await claimInactivityWin(id, userId);
-  //       if (result.error) {
-  //         console.error("Auto-claim failed:", result.error);
-  //         setHasClaimed(false); // Retry if it failed
-  //       }
-  //     }
-  //   }, 1000);
-  //   return () => clearInterval(interval);
-  // }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
-
   useEffect(() => {
-    if (gameStatus !== "playing" || !lastMoveAt || hasClaimed) return;
+    if (gameStatus !== "playing" || !lastMoveAt || !lastMoveBy || hasClaimed)
+      return;
 
-    const updateGameTimer = async () => {
-      if (!lastMoveAt) {
-        setTimeUntilTimeout(TIMEOUT_DURATION); // Keep it at max if no move recorded yet
-        return;
-      }
-      const now = Date.now();
+    const interval = setInterval(async () => {
+      const now = new Date().getTime();
       const last = new Date(lastMoveAt).getTime();
       const secondsPassed = (now - last) / 1000;
-      const remaining = Math.ceil(TIMEOUT_DURATION - secondsPassed);
 
-      // update constant for the UI
-      setTimeUntilTimeout(remaining > 0 ? remaining : 0);
+      const TIMEOUT_LIMIT = 120; // 2 minutes
 
-      if (remaining <= 0) {
-        if (amISafe && !hasClaimed) {
-          setHasClaimed(true);
-          console.log("Time up! Claiming Win...");
-          const result = await claimInactivityWin(id, userId!);
+      if (secondsPassed >= TIMEOUT_LIMIT && lastMoveBy === userId) {
+        setHasClaimed(true);
+        clearInterval(interval);
 
-          if (result.error) {
-            console.error("Auto-claim failed:", result.error);
-            setHasClaimed(false);
-          }
+        const result = await claimInactivityWin(id, userId);
+        if (result.error) {
+          console.error("Auto-claim failed:", result.error);
+          setHasClaimed(false); // Retry if it failed
         }
       }
-    };
-
-    updateGameTimer();
-
-    const interval = setInterval(updateGameTimer, 1000);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [lastMoveAt, gameStatus, lastMoveBy, userId, hasClaimed, id, amISafe]);
+  }, [lastMoveAt, lastMoveBy, gameStatus, userId, hasClaimed, id]);
 
   const prevStatus = useRef(gameStatus);
   useEffect(() => {
@@ -456,30 +411,8 @@ export default function GameClient({ id }: { id: string }) {
 
         {/* Player Side */}
         <div className="flex flex-1 flex-col items-center">
-          <span className="text-xs font-bold text-green-600 tracking-widest mb-4 flex items-center gap-2">
+          <span className="text-xs font-bold text-green-600 tracking-widest mb-4">
             YOU
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={(e) => {
-                e.currentTarget.blur();
-                showInvalidError(
-                  "Inactivity Timer: Game ends if this hits 0:00",
-                );
-              }}
-              className={`font-mono text-xs transition-colors duration-500 outline-none focus:outline-none ${
-                amISafe
-                  ? "text-gray-300 font-normal"
-                  : timeUntilTimeout < 10
-                    ? "text-red-600 font-bold"
-                    : timeUntilTimeout < 30
-                      ? "text-orange-400"
-                      : "text-gray-500"
-              }`}
-            >
-              ({Math.floor(timeUntilTimeout / 60)}:
-              {(timeUntilTimeout % 60).toString().padStart(2, "0")})
-            </button>
           </span>
 
           <WordleInput
