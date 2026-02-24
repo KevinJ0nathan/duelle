@@ -245,7 +245,7 @@ export default function GameClient({ id }: { id: string }) {
           setGameStatus(newGame.status);
 
           if (newGame.last_move_at) setLastMoveAt(newGame.last_move_at);
-          if (newGame.last_move_by_id) setLastMoveBy(newGame.last_move_by_id);
+          if (newGame.last_move_by_uid) setLastMoveBy(newGame.last_move_by_uid);
 
           setHasClaimed(false);
 
