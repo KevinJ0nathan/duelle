@@ -37,7 +37,11 @@ export default function GameOverModal({
               <h2 className="text-4xl font-black text-green-700 tracking-tight">
                 VICTORY!
               </h2>
-              <p className="text-gray-500 font-medium mt-2">You won!!!</p>
+              <p className="text-gray-500 font-medium mt-2">
+                You won!!!
+                <br />
+                The word was <b className="text-green-700">{secretWord}</b>.
+              </p>
             </>
           ) : isDraw ? (
             <>

@@ -5,7 +5,7 @@ import WordleInput from "@/components/game/WordleInput";
 import GameOverModal from "@/components/game/GameOverModal";
 
 import { useWordle } from "@/hooks/useWordle";
-import { useState, useEffect, use, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClientComponentClient } from "@/lib/supabase";
@@ -100,13 +100,25 @@ export default function GameClient({ id }: { id: string }) {
 
   const wordle = useWordle(id, userId || "", gameStatus, showInvalidError);
 
-  // reset game instance whenever gameid changes
-  useEffect(() => {
-    gameInstanceId.current = crypto.randomUUID();
-  }, [id]);
-
   // Initialize & Authentication
   useEffect(() => {
+    // This prevents "Old Match" ghost data and ensures subscription pauses
+    setLoading(true);
+    setWinner(null);
+    setSecretWord(null);
+    setGameStatus("waiting");
+    setOpponentGuesses([]);
+    setOpponentHistory([]);
+    setRematchRequested(false);
+    setOpponentRematchRequested(false);
+    setRematchStatus("idle");
+    setHasClaimed(false);
+    setLastMoveAt(null);
+    setLastMoveBy(null);
+
+    // Reset ref for safety
+    gameInstanceId.current = crypto.randomUUID();
+    hasRedirected.current = false;
     const initializeGame = async () => {
       // login check
       let currentUserId = userId;
@@ -144,6 +156,7 @@ export default function GameClient({ id }: { id: string }) {
       if (game.join_code) setJoinCode(game.join_code);
       setGameStatus(game.status); // waiting or playing
       if (game.winner_uid) setWinner(game.winner_uid);
+      else setWinner(null);
       if (game.last_move_at) setLastMoveAt(game.last_move_at);
       if (game.last_move_by_uid) setLastMoveBy(game.last_move_by_uid);
       // prevent more than 2 client to access the game page
