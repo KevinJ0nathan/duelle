@@ -331,6 +331,30 @@ export default function GameClient({ id }: { id: string }) {
     prevStatus.current = gameStatus;
   }, [gameStatus]);
 
+  // Safety net to prevent lagging users from missing a match
+  useEffect(() => {
+    // only run this checker when we are stuck at waiting
+    if (gameStatus !== "waiting" || !id) return;
+
+    const checkGameStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("active_games")
+          .select("status")
+          .eq("id", id)
+          .single();
+
+        if (error || !data) return;
+        // if data game status says its playing but our screen still says its waiting
+        if (data.status === "playing") {
+          setGameStatus("playing");
+        }
+      } catch (err) {}
+    };
+    const interval = setInterval(checkGameStatus, 3000);
+    return () => clearInterval(interval);
+  }, [gameStatus, id, supabase]);
+
   // // Rematch checker
   // useEffect(() => {
   //   // Only run if game is finished
